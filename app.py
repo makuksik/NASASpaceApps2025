@@ -103,7 +103,7 @@ ai_decision = ai_select_evacuation(
 )
 
 if ai_decision:
-    st.sidebar.success(f"🧠 AI wybrało: {ai_decision['name']} ({ai_decision['mode']}, {ai_decision['duration']} min)")
+    st.sidebar.success(f"🧠 AI wybrało: {ai_decision['name']} ({ai_decision['mode']}, {int(ai_decision['duration'])} min)")
     evacuation_routes = [ai_decision["route"]]
 else:
     st.sidebar.error("❌ AI nie znalazło bezpiecznej trasy w czasie!")
@@ -134,7 +134,7 @@ st.write(f"**Promień fali uderzeniowej:** {current_shockwave_radius:.2f} km")
 with st.expander("📋 Szczegóły ewakuacji"):
     if ai_decision:
         st.subheader(f"🏠 {ai_decision['name']}")
-        st.write(f"➡️ {ai_decision['mode']}: {ai_decision['duration']} min ({ai_decision['distance']} km)")
+        st.write(f"➡️ {ai_decision['mode']}: {int(ai_decision['duration'])} min ({ai_decision['distance']:.2f} km)")
     else:
         st.warning("Brak dostępnej trasy ewakuacyjnej.")
 
