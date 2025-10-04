@@ -1,9 +1,10 @@
-﻿import streamlit as st
+﻿import requests
+import streamlit as st
 import pandas as pd
 from streamlit_folium import st_folium
 from modules.zagrozenie import AsteroidDatabase
 from modules.map_renderer import render_map
-from modules.utils import get_route_info
+from modules.utils import ORS_API_KEY
 from modules.ai_planner import ai_select_evacuation
 
 # -----------------------------
@@ -16,11 +17,27 @@ st.sidebar.header("⚠️ Symulacja uderzenia")
 asteroid_names = [a.name for a in db.asteroids]
 wybrana_asteroida_name = st.sidebar.selectbox("Wybierz asteroidę", asteroid_names)
 
-# --- Lokalizacja użytkownika ---
-st.sidebar.header("📍 Twoja lokalizacja")
-user_lat = st.sidebar.number_input("Szerokość geograficzna użytkownika", value=52.2297)
-user_lon = st.sidebar.number_input("Długość geograficzna użytkownika", value=21.0122)
-user_location = {"lat": user_lat, "lng": user_lon}
+# --- Wyszukiwanie lokalizacji użytkownika ---
+st.sidebar.header("📍 Wyszukaj lokalizację")
+with st.sidebar.form("search_form"):
+    search_address = st.text_input("Wpisz adres lub miejscowość")
+    search_submitted = st.form_submit_button("Szukaj")  # Enter lub kliknięcie wyśle formularz
+
+if "user_location" not in st.session_state:
+    st.session_state.user_location = {"lat": 52.2297, "lng": 21.0122}
+
+# Geokodowanie po wysłaniu formularza
+if search_submitted and search_address:
+    geocode_url = "https://api.openrouteservice.org/geocode/search"
+    params = {"api_key": ORS_API_KEY, "text": search_address, "size": 1}
+    response = requests.get(geocode_url, params=params)
+    if response.status_code == 200 and response.json().get("features"):
+        feature = response.json()["features"][0]
+        coords = feature["geometry"]["coordinates"]
+        st.session_state.user_location = {"lat": coords[1], "lng": coords[0]}
+        st.sidebar.success(f"Znaleziono: {feature['properties']['label']}")
+    else:
+        st.sidebar.error("Nie znaleziono lokalizacji.")
 
 # --- Lokalizacja uderzenia asteroidy ---
 st.sidebar.header("🌋 Lokalizacja uderzenia")
@@ -149,7 +166,7 @@ medical_points_df = pd.DataFrame([
 # AI wybiera trasę ewakuacyjną
 # -----------------------------
 ai_decision = ai_select_evacuation(
-    user_location,
+    st.session_state.user_location,
     shelters_df,
     impact_lat,
     impact_lon,
@@ -173,7 +190,7 @@ map_object = render_map(
     aed_df,
     medical_points_df,
     water_points_df,
-    user_location,
+    st.session_state.user_location,
     evacuation_routes
 )
 

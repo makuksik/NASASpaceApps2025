@@ -1,8 +1,19 @@
+# utils.py
+import os
 import openrouteservice
+from dotenv import load_dotenv
 
-client = openrouteservice.Client(key="YOUR_ORS_API_KEY")
+# Ładowanie zmiennych środowiskowych tylko tutaj
+load_dotenv()
+ORS_API_KEY = os.getenv("ORS_API_KEY")
+
+# Tworzymy klienta ORS raz
+client = openrouteservice.Client(key=ORS_API_KEY)
 
 def get_route_info(start_coords, end_coords):
+    """
+    start_coords, end_coords: (lat, lng)
+    """
     modes = {
         "Pieszo": "foot-walking",
         "Rowerem": "cycling-regular",
@@ -10,17 +21,14 @@ def get_route_info(start_coords, end_coords):
     }
 
     routes = []
+    coords = [[start_coords[1], start_coords[0]], [end_coords[1], end_coords[0]]]  # lon, lat
+
     for label, profile in modes.items():
         try:
-            route = client.directions(
-                coordinates=[start_coords, end_coords],
-                profile=profile,
-                format="geojson"
-            )
-            geometry = route["features"][0]["geometry"]
+            route = client.directions(coordinates=coords, profile=profile, format="geojson")
             summary = route["features"][0]["properties"]["summary"]
-
-            route_coords = [[lat, lon] for lon, lat in geometry["coordinates"]]
+            points = route["features"][0]["geometry"]["coordinates"]
+            route_coords = [[lat, lon] for lon, lat in points]
 
             routes.append({
                 "label": label,
@@ -28,7 +36,8 @@ def get_route_info(start_coords, end_coords):
                 "distance_km": round(summary["distance"] / 1000, 2),
                 "route": route_coords
             })
-        except Exception:
+        except Exception as e:
+            print("Błąd ORS:", e)
             continue
 
     return routes
