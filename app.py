@@ -62,14 +62,33 @@ asteroid_data = {
 # -----------------------------
 # Dane schronów
 # -----------------------------
-try:
-    shelters_df = pd.read_csv("data/schrony.csv")
-except:
-    shelters_df = pd.DataFrame([
-        {"name": "Schron Warszawa Centrum", "lat": 52.2300, "lng": 21.0100},
-        {"name": "Schron Praga", "lat": 52.2550, "lng": 21.0400},
-        {"name": "Schron Mokotów", "lat": 52.2000, "lng": 21.0200},
-    ])
+shelters_df = pd.DataFrame([
+    {"name": "Schron Alfa (ul. Kozielska 4)", "lat": 52.2785, "lng": 20.9812},
+    {"name": "Schron Huta Warszawa (Młociny)", "lat": 52.2921, "lng": 20.9357},
+    {"name": "Schron Bielany (osiedlowy)", "lat": 52.2840, "lng": 20.9560},
+    {"name": "Schron Wola (podziemia biurowca)", "lat": 52.2350, "lng": 20.9800},
+    {"name": "Schron Mokotów (garaż podziemny)", "lat": 52.2000, "lng": 21.0200},
+    {"name": "Schron Ursynów (garaż podziemny)", "lat": 52.1500, "lng": 21.0500},
+    {"name": "Schron Praga Północ (piwnica szkoły)", "lat": 52.2580, "lng": 21.0400},
+    {"name": "Schron Żerań (zakład przemysłowy)", "lat": 52.2950, "lng": 21.0200},
+    {"name": "Schron Marymont (piwnica techniczna)", "lat": 52.2780, "lng": 20.9800}
+])
+
+# -----------------------------
+# Dane AED
+# -----------------------------
+aed_df = pd.DataFrame([
+    {"name": "AED Metro Centrum", "lat": 52.2298, "lng": 21.0118, "info": "AED przy wejściu głównym, brak respiratora"},
+    {"name": "AED Metro Politechnika", "lat": 52.2193, "lng": 21.0182, "info": "AED + respirator w punkcie medycznym"},
+    {"name": "AED Metro Świętokrzyska", "lat": 52.2335, "lng": 21.0106, "info": "AED przy kasach, brak respiratora"},
+    {"name": "AED Metro Ratusz Arsenał", "lat": 52.2430, "lng": 21.0045, "info": "AED + respirator w dyżurce ochrony"},
+    {"name": "AED Pałac Kultury", "lat": 52.2319, "lng": 21.0059, "info": "AED w recepcji, brak respiratora"},
+    {"name": "AED Hala Torwar", "lat": 52.2220, "lng": 21.0450, "info": "AED + respirator w punkcie medycznym"},
+    {"name": "AED Biblioteka UW", "lat": 52.2405, "lng": 21.0205, "info": "AED przy wejściu głównym, brak respiratora"},
+    {"name": "AED Złote Tarasy", "lat": 52.2305, "lng": 21.0030, "info": "AED + respirator w punkcie ochrony"},
+    {"name": "AED Stadion Narodowy", "lat": 52.2390, "lng": 21.0450, "info": "AED + respirator w punkcie medycznym"},
+    {"name": "AED Lotnisko Chopina", "lat": 52.1650, "lng": 20.9670, "info": "AED + respirator w strefie kontroli bezpieczeństwa"}
+])
 
 # -----------------------------
 # AI wybiera trasę ewakuacyjną
@@ -93,7 +112,7 @@ else:
 # -----------------------------
 # Renderowanie mapy
 # -----------------------------
-map_object = render_map(asteroid_data, shelters_df, user_location, evacuation_routes)
+map_object = render_map(asteroid_data, shelters_df, aed_df, user_location, evacuation_routes)
 st.title("🗺️ Mapa zagrożenia")
 st_folium(map_object, width=700, height=500)
 

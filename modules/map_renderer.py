@@ -1,31 +1,41 @@
 import folium
 import pandas as pd
-from .map_layers import add_zones, add_impact_marker, add_shelters, add_user_location, add_evacuation_routes
+from .map_layers import (
+    add_zones,
+    add_impact_marker,
+    add_shelters,
+    add_user_location,
+    add_evacuation_routes,
+    add_aed_locations  # ⬅️ dodane
+)
 
-def render_map(asteroid_data: dict, shelters_df: pd.DataFrame, user_location=None, evacuation_routes=None):
+def render_map(asteroid_data: dict, shelters_df: pd.DataFrame, aed_df: pd.DataFrame, user_location=None, evacuation_routes=None):
+
     """
     Renderuje mapę zagrożenia asteroidą z wszystkimi strefami, markerami i trasami ewakuacyjnymi.
 
     asteroid_data: dict - wynik calculate_impact_for_location z zagrozenie.py
     shelters_df: pd.DataFrame - lista schronów z kolumnami lat/lng/name
+    aed_df: pd.DataFrame - lista AED z kolumnami lat/lng/name/info
     user_location: dict - {'lat': float, 'lng': float}
     evacuation_routes: list - lista tras ewakuacyjnych (każda trasa to lista [lat, lng])
     """
-    # Pobieramy współrzędne miejsca uderzenia
     lat = asteroid_data["impact_coordinates"]["lat"]
     lng = asteroid_data["impact_coordinates"]["lon"]
 
-    # Tworzymy mapę skupioną na miejscu uderzenia
     m = folium.Map(location=[lat, lng], zoom_start=10)
 
-    # Rysujemy wszystkie strefy z circles_coordinates
+    # Strefy zagrożenia
     add_zones(m, asteroid_data.get("circles_coordinates", {}))
 
-    # Marker miejsca uderzenia
+    # Miejsce uderzenia
     add_impact_marker(m, lat, lng, asteroid_data["asteroid_name"])
 
     # Schrony
     add_shelters(m, shelters_df)
+
+    # AED
+    add_aed_locations(m, aed_df)  # ⬅️ dodane
 
     # Lokalizacja użytkownika
     if user_location:

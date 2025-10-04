@@ -50,6 +50,29 @@ def add_shelters(map_object, shelters_df: pd.DataFrame):
             icon=folium.Icon(color="green", icon="home")
         ).add_to(map_object)
 
+import folium
+import pandas as pd
+
+def add_aed_locations(map_object, aed_df: pd.DataFrame):
+    for _, row in aed_df.iterrows():
+        if not all(k in row for k in ["lat", "lng", "name", "info"]):
+            continue
+
+        info_lower = row["info"].lower()
+        if "respirator" in info_lower:
+            icon_color = "darkred"
+            icon_type = "plus"
+        else:
+            icon_color = "orange"
+            icon_type = "medkit"
+
+        folium.Marker(
+            location=[row["lat"], row["lng"]],
+            popup=f"{row['name']}<br>{row['info']}",
+            icon=folium.Icon(color=icon_color, icon=icon_type, prefix="fa")
+        ).add_to(map_object)
+
+
 def add_user_location(map_object, lat, lng):
     folium.Marker(
         location=[lat, lng],
