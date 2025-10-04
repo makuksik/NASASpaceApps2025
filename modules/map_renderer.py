@@ -1,6 +1,6 @@
 import folium
 import pandas as pd
-from modules.map_layers import (
+from .map_layers import (
     draw_impact_zone,
     draw_shockwave_zone,
     add_impact_marker,
