@@ -1,41 +1,34 @@
 import openrouteservice
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
-ORS_API_KEY = os.getenv("ORS_API_KEY")
-client = openrouteservice.Client(key=ORS_API_KEY)
+client = openrouteservice.Client(key="YOUR_ORS_API_KEY")
 
-def get_route_info(origin, destination):
-    """
-    Zwraca czasy przejścia pieszo, rowerem i samochodem oraz trasę.
-    origin, destination: tuple (lat, lng)
-    """
-    profiles = {
-        "foot-walking": "Pieszo",
-        "cycling-regular": "Rowerem",
-        "driving-car": "Samochodem"
+def get_route_info(start_coords, end_coords):
+    modes = {
+        "Pieszo": "foot-walking",
+        "Rowerem": "cycling-regular",
+        "Samochodem": "driving-car"
     }
 
-    results = []
-
-    for profile, label in profiles.items():
-        coords = [[origin[1], origin[0]], [destination[1], destination[0]]]  # ORS używa [lng, lat]
+    routes = []
+    for label, profile in modes.items():
         try:
-            route = client.directions(coordinates=coords, profile=profile, format='geojson')
-            summary = route['features'][0]['properties']['summary']
-            duration_sec = summary['duration']
-            distance_m = summary['distance']
-            points = route['features'][0]['geometry']['coordinates']
-            formatted = [[lat, lng] for lng, lat in points]
+            route = client.directions(
+                coordinates=[start_coords, end_coords],
+                profile=profile,
+                format="geojson"
+            )
+            geometry = route["features"][0]["geometry"]
+            summary = route["features"][0]["properties"]["summary"]
 
-            results.append({
+            route_coords = [[lat, lon] for lon, lat in geometry["coordinates"]]
+
+            routes.append({
                 "label": label,
-                "duration_min": round(duration_sec / 60, 1),
-                "distance_km": round(distance_m / 1000, 2),
-                "route": formatted
+                "duration_min": round(summary["duration"] / 60, 1),
+                "distance_km": round(summary["distance"] / 1000, 2),
+                "route": route_coords
             })
-        except Exception as e:
-            print(f"Błąd dla profilu {label}:", e)
+        except Exception:
+            continue
 
-    return results
+    return routes

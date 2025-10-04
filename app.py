@@ -4,94 +4,125 @@ from streamlit_folium import st_folium
 from modules.zagrozenie import AsteroidDatabase
 from modules.map_renderer import render_map
 from modules.utils import get_route_info
+from modules.ai_planner import ai_select_evacuation
 
 # -----------------------------
 # Inicjalizacja bazy asteroid
 # -----------------------------
 db = AsteroidDatabase()
 
-# -----------------------------
-# Sidebar – wybór asteroidy i lokalizacji
-# -----------------------------
-st.sidebar.header("Ustawienia zagrożenia")
+# --- Sidebar: Wybór asteroidy ---
+st.sidebar.header("⚠️ Symulacja uderzenia")
 asteroid_names = [a.name for a in db.asteroids]
 wybrana_asteroida_name = st.sidebar.selectbox("Wybierz asteroidę", asteroid_names)
-lat = st.sidebar.number_input("Szerokość geograficzna", value=52.2297)
-lon = st.sidebar.number_input("Długość geograficzna", value=21.0122)
 
-# Stan przycisku
-if "show_impact" not in st.session_state:
-    st.session_state.show_impact = False
+# --- Lokalizacja użytkownika ---
+st.sidebar.header("📍 Twoja lokalizacja")
+user_lat = st.sidebar.number_input("Szerokość geograficzna użytkownika", value=52.2297)
+user_lon = st.sidebar.number_input("Długość geograficzna użytkownika", value=21.0122)
+user_location = {"lat": user_lat, "lng": user_lon}
 
-if st.sidebar.button("Pokaż zagrożenie"):
-    st.session_state.show_impact = True
+# --- Lokalizacja uderzenia asteroidy ---
+st.sidebar.header("🌋 Lokalizacja uderzenia")
+impact_lat = st.sidebar.number_input("Szerokość geograficzna uderzenia", value=52.2550)
+impact_lon = st.sidebar.number_input("Długość geograficzna uderzenia", value=21.0400)
+
+# --- Suwaki czasowe ---
+time_to_impact_min = st.sidebar.slider("⏱️ Minuty do uderzenia", 0, 60, 15)
+time_after_impact_min = st.sidebar.slider("🌪️ Minuty po uderzeniu", 0, 300, 0)
+
+# --- Dane asteroid i uderzenia ---
+wybrana_asteroida = next(a for a in db.asteroids if a.name == wybrana_asteroida_name)
+impact_details = db.calculate_impact_for_location(wybrana_asteroida, impact_lat, impact_lon)
+
+max_shockwave_radius = impact_details["destruction_zones"]["shockwave_radius_km"]
+shockwave_speed_km_per_min = max_shockwave_radius / 300
+
+# 🔁 Obliczenie aktualnego promienia fali uderzeniowej
+if time_to_impact_min > 0:
+    current_shockwave_radius = min(max_shockwave_radius, shockwave_speed_km_per_min * (60 - time_to_impact_min))
+else:
+    current_shockwave_radius = min(max_shockwave_radius, shockwave_speed_km_per_min * time_after_impact_min)
+
+# --- Przygotowanie danych do render_map ---
+asteroid_data = {
+    "asteroid_name": impact_details["asteroid_name"],
+    "impact_coordinates": {"lat": impact_lat, "lon": impact_lon},
+    "circles_coordinates": impact_details.get("circles_coordinates", {}),
+    "destruction_zones": impact_details.get("destruction_zones", {}),
+    "threat_level": impact_details.get("threat_level", "nieznany"),
+    "energy_megatons": impact_details.get("energy_megatons", 0),
+    "historical_comparison": impact_details.get("historical_comparison", ""),
+    "total_affected_area_km2": impact_details.get("total_affected_area_km2", 0),
+    "trajectory": impact_details.get("trajectory", ""),
+    "impact_probability": impact_details.get("impact_probability", 0.0),
+    "shockwave_radius_km": current_shockwave_radius
+}
 
 # -----------------------------
 # Dane schronów
 # -----------------------------
-shelters_df = pd.DataFrame([
-    {"name": "Schron Warszawa Centrum", "lat": 52.2300, "lng": 21.0100},
-    {"name": "Schron Praga", "lat": 52.2550, "lng": 21.0400},
-    {"name": "Schron Mokotów", "lat": 52.2000, "lng": 21.0200},
-])
-
-# Lokalizacja użytkownika (przykładowa)
-user_location = {"lat": 52.2400, "lng": 21.0300}
+try:
+    shelters_df = pd.read_csv("data/schrony.csv")
+except:
+    shelters_df = pd.DataFrame([
+        {"name": "Schron Warszawa Centrum", "lat": 52.2300, "lng": 21.0100},
+        {"name": "Schron Praga", "lat": 52.2550, "lng": 21.0400},
+        {"name": "Schron Mokotów", "lat": 52.2000, "lng": 21.0200},
+    ])
 
 # -----------------------------
-# Wyświetlanie mapy i informacji o zagrożeniu
+# AI wybiera trasę ewakuacyjną
 # -----------------------------
-if st.session_state.show_impact:
-    # Pobieramy asteroidę z bazy
-    wybrana_asteroida = next(a for a in db.asteroids if a.name == wybrana_asteroida_name)
-    asteroid_data = db.calculate_impact_for_location(wybrana_asteroida, lat, lon)
+ai_decision = ai_select_evacuation(
+    user_location,
+    shelters_df,
+    impact_lat,
+    impact_lon,
+    current_shockwave_radius,
+    time_to_impact_min
+)
 
-    # -----------------------------
-    # Sidebar – wybór trasy ewakuacyjnej
-    # -----------------------------
-    st.sidebar.header("🧭 Wybierz trasę ewakuacyjną")
-    selected_shelter_name = st.sidebar.selectbox("Schron:", shelters_df["name"].tolist())
-    selected_mode_label = st.sidebar.radio("Tryb transportu:", ["Pieszo", "Rowerem", "Samochodem"])
+if ai_decision:
+    st.sidebar.success(f"🧠 AI wybrało: {ai_decision['name']} ({ai_decision['mode']}, {ai_decision['duration']} min)")
+    evacuation_routes = [ai_decision["route"]]
+else:
+    st.sidebar.error("❌ AI nie znalazło bezpiecznej trasy w czasie!")
+    evacuation_routes = None
 
-    selected_shelter = shelters_df[shelters_df["name"] == selected_shelter_name].iloc[0]
-    shelter_coords = (selected_shelter["lat"], selected_shelter["lng"])
+# -----------------------------
+# Renderowanie mapy
+# -----------------------------
+map_object = render_map(asteroid_data, shelters_df, user_location, evacuation_routes)
+st.title("🗺️ Mapa zagrożenia")
+st_folium(map_object, width=700, height=500)
 
-    # Klucz sesji dla trasy
-    session_key = f"{selected_shelter_name}_{selected_mode_label}"
-    if session_key not in st.session_state:
-        st.session_state[session_key] = get_route_info(
-            (user_location["lat"], user_location["lng"]),
-            shelter_coords
-        )
+# -----------------------------
+# Informacje o asteroidzie
+# -----------------------------
+st.subheader(f"💥 Asteroida: {asteroid_data['asteroid_name']}")
+st.write(f"**Stopień zagrożenia:** {asteroid_data['threat_level']}")
+st.write(f"**Energia uderzenia:** {asteroid_data['energy_megatons']} Mt TNT")
+st.write(f"**Porównanie historyczne:** {asteroid_data['historical_comparison']}")
+st.write(f"**Obszar zniszczeń:** {asteroid_data['total_affected_area_km2']:,} km²")
+st.write(f"**Trajektoria uderzenia:** {asteroid_data['trajectory']}")
+st.write(f"**Prawdopodobieństwo uderzenia:** {asteroid_data['impact_probability']:.5f}")
+st.write(f"**Promień fali uderzeniowej:** {current_shockwave_radius:.2f} km")
 
-    route_info = st.session_state[session_key]
-    selected_route_data = next((r for r in route_info if r["label"] == selected_mode_label), None)
-    evacuation_routes = [selected_route_data["route"]] if selected_route_data else None
+# -----------------------------
+# Informacje o trasie
+# -----------------------------
+with st.expander("📋 Szczegóły ewakuacji"):
+    if ai_decision:
+        st.subheader(f"🏠 {ai_decision['name']}")
+        st.write(f"➡️ {ai_decision['mode']}: {ai_decision['duration']} min ({ai_decision['distance']} km)")
+    else:
+        st.warning("Brak dostępnej trasy ewakuacyjnej.")
 
-    # -----------------------------
-    # Renderowanie mapy
-    # -----------------------------
-    map_object = render_map(asteroid_data, shelters_df, user_location, evacuation_routes)
-    st.title("🗺️ Mapa zagrożenia")
-    st_folium(map_object, width=700, height=500)
-
-    # -----------------------------
-    # Informacje o asteroidzie
-    # -----------------------------
-    st.subheader(f"💥 Asteroida: {asteroid_data['asteroid_name']}")
-    st.write(f"**Stopień zagrożenia:** {asteroid_data['threat_level']}")
-    st.write(f"**Energia uderzenia:** {asteroid_data['energy_megatons']} Mt TNT")
-    st.write(f"**Porównanie historyczne:** {asteroid_data['historical_comparison']}")
-    st.write(f"**Całkowity obszar dotknięty zniszczeniem:** {asteroid_data['total_affected_area_km2']:,} km²")
-    st.write(f"**Trajektoria uderzenia:** {asteroid_data['trajectory']}")
-    st.write(f"**Prawdopodobieństwo uderzenia:** {asteroid_data['impact_probability']:.5f}")
-
-    # -----------------------------
-    # Informacje o trasie
-    # -----------------------------
-    with st.expander("📋 Szczegóły trasy"):
-        st.subheader(f"🏠 {selected_shelter_name}")
-        if selected_route_data:
-            st.write(f"➡️ {selected_mode_label}: {selected_route_data['duration_min']} min ({selected_route_data['distance_km']} km)")
-        else:
-            st.warning("Brak danych dla wybranego trybu.")
+# -----------------------------
+# Ostrzeżenia czasowe
+# -----------------------------
+if time_to_impact_min > 0:
+    st.warning(f"☄️ Uderzenie nastąpi za {time_to_impact_min} minut.")
+else:
+    st.error(f"💥 Uderzenie nastąpiło {time_after_impact_min} minut temu.")
