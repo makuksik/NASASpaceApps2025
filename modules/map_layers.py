@@ -1,24 +1,39 @@
 import folium
+import pandas as pd
 
-def draw_impact_zone(map_object, lat, lng, radius_km):
-    folium.Circle(
-        radius=radius_km * 1000,
-        location=[lat, lng],
-        popup="Strefa uderzenia",
-        color="red",
-        fill=True,
-        fill_opacity=0.4
-    ).add_to(map_object)
+def add_zones(map_object, circles_coordinates: dict):
+    """
+    Rysuje wszystkie strefy uderzenia asteroid na mapie.
 
-def draw_shockwave_zone(map_object, lat, lng, radius_km):
-    folium.Circle(
-        radius=radius_km * 1000,
-        location=[lat, lng],
-        popup="Strefa fali uderzeniowej",
-        color="orange",
-        fill=True,
-        fill_opacity=0.2
-    ).add_to(map_object)
+    circles_coordinates: dict - np. map_data['circles_coordinates'] z zagrozenie.py
+    """
+    for zone_name, coords in circles_coordinates.items():
+        if not coords:
+            continue
+        # Kolor i przezroczystość w zależności od typu strefy
+        if "crater" in zone_name or "destruction" in zone_name or "severe" in zone_name:
+            color = "red"
+            fill_opacity = 0.3
+        elif "moderate" in zone_name:
+            color = "orange"
+            fill_opacity = 0.2
+        elif "light" in zone_name:
+            color = "yellow"
+            fill_opacity = 0.1
+        elif "shockwave" in zone_name:
+            color = "blue"
+            fill_opacity = 0.05
+        else:
+            color = "gray"
+            fill_opacity = 0.1
+
+        folium.Polygon(
+            locations=coords,
+            color=color,
+            fill=True,
+            fill_opacity=fill_opacity,
+            popup=zone_name.replace("_", " ").capitalize()
+        ).add_to(map_object)
 
 def add_impact_marker(map_object, lat, lng, asteroid_name):
     folium.Marker(
@@ -27,7 +42,7 @@ def add_impact_marker(map_object, lat, lng, asteroid_name):
         icon=folium.Icon(color="red", icon="asterisk")
     ).add_to(map_object)
 
-def add_shelters(map_object, shelters_df):
+def add_shelters(map_object, shelters_df: pd.DataFrame):
     for _, row in shelters_df.iterrows():
         folium.Marker(
             location=[row["lat"], row["lng"]],
@@ -42,7 +57,7 @@ def add_user_location(map_object, lat, lng):
         icon=folium.Icon(color="blue", icon="user")
     ).add_to(map_object)
 
-def add_evacuation_routes(map_object, routes):
+def add_evacuation_routes(map_object, routes: list):
     for route in routes:
         folium.PolyLine(
             locations=route,

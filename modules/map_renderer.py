@@ -1,25 +1,37 @@
 import folium
 import pandas as pd
-from .map_layers import (
-    draw_impact_zone,
-    draw_shockwave_zone,
-    add_impact_marker,
-    add_shelters,
-    add_user_location,
-    add_evacuation_routes
-)
+from .map_layers import add_zones, add_impact_marker, add_shelters, add_user_location, add_evacuation_routes
 
-def render_map(asteroid_data, shelters_df, user_location=None, evacuation_routes=None):
-    m = folium.Map(location=[asteroid_data["impact_lat"], asteroid_data["impact_lng"]], zoom_start=10)
+def render_map(asteroid_data: dict, shelters_df: pd.DataFrame, user_location=None, evacuation_routes=None):
+    """
+    Renderuje mapę zagrożenia asteroidą z wszystkimi strefami, markerami i trasami ewakuacyjnymi.
 
-    draw_impact_zone(m, asteroid_data["impact_lat"], asteroid_data["impact_lng"], asteroid_data["impact_radius_km"])
-    draw_shockwave_zone(m, asteroid_data["impact_lat"], asteroid_data["impact_lng"], asteroid_data["shockwave_radius_km"])
-    add_impact_marker(m, asteroid_data["impact_lat"], asteroid_data["impact_lng"], asteroid_data["name"])
+    asteroid_data: dict - wynik calculate_impact_for_location z zagrozenie.py
+    shelters_df: pd.DataFrame - lista schronów z kolumnami lat/lng/name
+    user_location: dict - {'lat': float, 'lng': float}
+    evacuation_routes: list - lista tras ewakuacyjnych (każda trasa to lista [lat, lng])
+    """
+    # Pobieramy współrzędne miejsca uderzenia
+    lat = asteroid_data["impact_coordinates"]["lat"]
+    lng = asteroid_data["impact_coordinates"]["lon"]
+
+    # Tworzymy mapę skupioną na miejscu uderzenia
+    m = folium.Map(location=[lat, lng], zoom_start=10)
+
+    # Rysujemy wszystkie strefy z circles_coordinates
+    add_zones(m, asteroid_data.get("circles_coordinates", {}))
+
+    # Marker miejsca uderzenia
+    add_impact_marker(m, lat, lng, asteroid_data["asteroid_name"])
+
+    # Schrony
     add_shelters(m, shelters_df)
 
+    # Lokalizacja użytkownika
     if user_location:
         add_user_location(m, user_location["lat"], user_location["lng"])
 
+    # Trasy ewakuacyjne
     if evacuation_routes:
         add_evacuation_routes(m, evacuation_routes)
 
