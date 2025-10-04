@@ -12,24 +12,24 @@ from modules.ai_planner import ai_select_evacuation
 db = AsteroidDatabase()
 
 # --- Sidebar: Wybór asteroidy ---
-st.sidebar.header("⚠️ Symulacja uderzenia")
+st.sidebar.header("⚠️ Impact simulation")
 asteroid_names = [a.name for a in db.asteroids]
-wybrana_asteroida_name = st.sidebar.selectbox("Wybierz asteroidę", asteroid_names)
+wybrana_asteroida_name = st.sidebar.selectbox("Select an asteroid", asteroid_names)
 
 # --- Lokalizacja użytkownika ---
-st.sidebar.header("📍 Twoja lokalizacja")
-user_lat = st.sidebar.number_input("Szerokość geograficzna użytkownika", value=52.2297)
-user_lon = st.sidebar.number_input("Długość geograficzna użytkownika", value=21.0122)
+st.sidebar.header("📍 Your location")
+user_lat = st.sidebar.number_input("The user's latitude", value=52.2297)
+user_lon = st.sidebar.number_input("The user's longitude", value=21.0122)
 user_location = {"lat": user_lat, "lng": user_lon}
 
 # --- Lokalizacja uderzenia asteroidy ---
-st.sidebar.header("🌋 Lokalizacja uderzenia")
-impact_lat = st.sidebar.number_input("Szerokość geograficzna uderzenia", value=52.2550)
-impact_lon = st.sidebar.number_input("Długość geograficzna uderzenia", value=21.0400)
+st.sidebar.header("🌋 Impact Location")
+impact_lat = st.sidebar.number_input("Latitude of impact", value=52.2550)
+impact_lon = st.sidebar.number_input("Longitude of impact", value=21.0400)
 
 # --- Suwaki czasowe ---
-time_to_impact_min = st.sidebar.slider("⏱️ Minuty do uderzenia", 0, 60, 15)
-time_after_impact_min = st.sidebar.slider("🌪️ Minuty po uderzeniu", 0, 300, 0)
+time_to_impact_min = st.sidebar.slider("⏱️ Minutes to strike", 0, 60, 15)
+time_after_impact_min = st.sidebar.slider("🌪️ Minutes after impact", 0, 300, 0)
 
 # --- Dane asteroid i uderzenia ---
 wybrana_asteroida = next(a for a in db.asteroids if a.name == wybrana_asteroida_name)
@@ -158,10 +158,10 @@ ai_decision = ai_select_evacuation(
 )
 
 if ai_decision:
-    st.sidebar.success(f"🧠 AI wybrało: {ai_decision['name']} ({ai_decision['mode']}, {int(ai_decision['duration'])} min)")
+    st.sidebar.success(f"🧠 AI chose: {ai_decision['name']} ({ai_decision['mode']}, {int(ai_decision['duration'])} min)")
     evacuation_routes = [ai_decision["route"]]
 else:
-    st.sidebar.error("❌ AI nie znalazło bezpiecznej trasy w czasie!")
+    st.sidebar.error("❌ AI failed to find a safe route in time!")
     evacuation_routes = None
 
 # -----------------------------
@@ -177,70 +177,70 @@ map_object = render_map(
     evacuation_routes
 )
 
-st.title("🗺️ Mapa zagrożenia")
+st.title("🗺️ Threat Map")
 st_folium(map_object, width=700, height=500)
 
 # -----------------------------
 # Informacje o asteroidzie
 # -----------------------------
-st.subheader(f"💥 Asteroida: {asteroid_data['asteroid_name']}")
-st.write(f"**Stopień zagrożenia:** {asteroid_data['threat_level']}")
-st.write(f"**Energia uderzenia:** {asteroid_data['energy_megatons']} Mt TNT")
-st.write(f"**Porównanie historyczne:** {asteroid_data['historical_comparison']}")
-st.write(f"**Obszar zniszczeń:** {asteroid_data['total_affected_area_km2']:,} km²")
-st.write(f"**Trajektoria uderzenia:** {asteroid_data['trajectory']}")
-st.write(f"**Prawdopodobieństwo uderzenia:** {asteroid_data['impact_probability']:.5f}")
-st.write(f"**Promień fali uderzeniowej:** {current_shockwave_radius:.2f} km")
+st.subheader(f"💥 Asteroid: {asteroid_data['asteroid_name']}")
+st.write(f"**Threat level:** {asteroid_data['threat_level']}")
+st.write(f"**Impact energy:** {asteroid_data['energy_megatons']} Mt TNT")
+st.write(f"**Historical comparison:** {asteroid_data['historical_comparison']}")
+st.write(f"**Area of destruction:** {asteroid_data['total_affected_area_km2']:,} km²")
+st.write(f"**Impact Trajectory:** {asteroid_data['trajectory']}")
+st.write(f"**Impact probability:** {asteroid_data['impact_probability']:.5f}")
+st.write(f"**Shockwave radius:** {current_shockwave_radius:.2f} km")
 
 # -----------------------------
 # Informacje o trasie
 # -----------------------------
-with st.expander("📋 Szczegóły ewakuacji"):
+with st.expander("📋 Evacuation details"):
     if ai_decision:
         st.subheader(f"🏠 {ai_decision['name']}")
         st.write(f"➡️ {ai_decision['mode']}: {int(ai_decision['duration'])} min ({ai_decision['distance']:.2f} km)")
     else:
-        st.warning("Brak dostępnej trasy ewakuacyjnej.")
+        st.warning("No escape route available.")
 
 # -----------------------------
 # Ostrzeżenia czasowe
 # -----------------------------
 if time_to_impact_min > 0:
-    st.warning(f"☄️ Uderzenie nastąpi za {time_to_impact_min} minut.")
+    st.warning(f"☄️ Impact will occur in {time_to_impact_min} minutes.")
 else:
-    st.error(f"💥 Uderzenie nastąpiło {time_after_impact_min} minut temu.")
+    st.error(f"💥 Impact occurred {time_after_impact_min} minutes ago.")
 
-st.markdown("## 🧭 Instrukcja postępowania po uderzeniu meteorytu")
+st.markdown("## 🧭 Instructions for action after a meteorite impact")
 
-etap = st.selectbox("Wybierz etap", ["⏱️ Pierwsze godziny", "📆 Pierwsze dni", "🗓️ Pierwsze tygodnie"])
+etap = st.selectbox("Select stage", ["⏱️ First hours", "📆 First days", "🗓️ First weeks"])
 
-if etap == "⏱️ Pierwsze godziny":
-    with st.expander("Zachowanie w pierwszych godzinach (0–6h)", expanded=True):
+if etap == "⏱️ First hours":
+    with st.expander("Behavior in the first hours (0–6h)", expanded=True):
         st.markdown("""
-- **Zachowaj spokój.** Nie podejmuj pochopnych decyzji.
-- **Pozostań w schronie.** Fala uderzeniowa i wtórne zniszczenia mogą trwać.
-- **Unikaj okien i otwartych przestrzeni.**
-- **Wyłącz wentylację.** Zminimalizuj ryzyko skażenia powietrza.
-- **Zabezpiecz wodę i żywność.**
-- **Sprawdź dostępność AED i respiratora.**
-        """)
+- **Stay calm.** Don't make hasty decisions.
+- **Stay in the shelter.** The shockwave and secondary damage may continue.
+- **Avoid windows and open spaces.**
+- **Turn off ventilation.** Minimize the risk of air contamination.
+- **Secure water and food.**
+- **Check the availability of an AED and ventilator.**
+""")
 
-elif etap == "📆 Pierwsze dni":
-    with st.expander("Zachowanie w pierwszych dniach (6h–72h)", expanded=True):
+elif etap == "🗓️ First days":
+    with st.expander("Behavior in the first weeks (0–3 days)", expanded=True):
         st.markdown("""
-- **Oceń stan otoczenia.** Jeśli schron jest uszkodzony — rozważ ostrożną ewakuację.
-- **Unikaj kontaktu z wodą gruntową.**
-- **Monitoruj komunikaty.** Radio, sieć lokalna, aplikacja.
-- **Pomagaj innym.** Wskaż najbliższe punkty medyczne.
-- **Nie przemieszczaj się bez celu.**
-        """)
+- **Assess the surroundings.** If the shelter is damaged, consider a cautious evacuation.
+- **Avoid contact with groundwater.**
+- **Monitor messages.** Radio, local network, app.
+- **Help others.** Indicate the nearest medical facilities.
+- **Do not wander aimlessly.**
+""")
 
-elif etap == "🗓️ Pierwsze tygodnie":
-    with st.expander("Zachowanie w pierwszych tygodniach (3–21 dni)", expanded=True):
+elif etap == "🗓️ First weeks":
+    with st.expander("Behavior in the first weeks (3–21 days)", expanded=True):
         st.markdown("""
-- **Dołącz do lokalnych struktur przetrwania.**
-- **Zgłaszaj swoją pozycję.** Jeśli masz dostęp do sieci.
-- **Unikaj zbiorowisk bez organizacji.**
-- **Zbieraj dane.** Dokumentuj stan otoczenia.
-- **Przygotuj się na kolejne fale.** Wstrząsy wtórne, opady pyłu.
-        """)
+- **Join local survival structures.**
+- **Report your position.** If you have internet access.
+- **Avoid unorganized gatherings.**
+- **Collect data.** Document the state of the environment.
+- **Prepare for subsequent waves.** Aftershocks, dust fall.
+""")

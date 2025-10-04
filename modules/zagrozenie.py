@@ -9,10 +9,10 @@ from datetime import datetime
 
 class ThreatLevel(Enum):
     """Poziomy zagrożenia asteroidą"""
-    MINOR = "małe"
-    MODERATE = "średnie"
-    SEVERE = "poważne"
-    CATASTROPHIC = "katastrofalne"
+    MINOR = "minor"
+    MODERATE = "moderate"
+    SEVERE = "severe"
+    CATASTROPHIC = "catastrophic"
 
 @dataclass
 class Asteroid:
@@ -198,15 +198,15 @@ class ThreatAnalyzer:
     def compare_to_historical_events(energy_megatons: float) -> str:
         """Porównuje energię z historycznymi wydarzeniami"""
         if energy_megatons < 0.02:
-            return "Mniejsze niż meteor z Czelabińska (2013)"
+            return "Smaller than the Chelyabinsk meteor (2013)"
         elif energy_megatons < 15:
-            return "Podobne do bomby atomowej z Hiroszimy"
+            return "Similar to the atomic bomb of Hiroshima"
         elif energy_megatons < 50:
-            return "Podobne do największych bomb jądrowych"
+            return "Similar to the largest nuclear bombs"
         elif energy_megatons < 1000:
-            return "Podobne do wydarzenia tunguskiego (1908)"
+            return "Similar to the Tunguska Event (1908)"
         else:
-            return "Zdarzenie wymierające (jak uderzenie, które zabiło dinozaury)"
+            return "Extinction event (like the impact that killed the dinosaurs)"
 
 
 class AsteroidDatabase: # WAZNA KLASA- aktualnie jest 6 asteroid
@@ -413,7 +413,7 @@ class AsteroidDatabase: # WAZNA KLASA- aktualnie jest 6 asteroid
         json_data = self.to_json()
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(json_data)
-        print(f"✅ Dane zapisane do: {filepath}")
+        print(f"✅ Data saved to: {filepath}")
 
     def export_for_frontend(self, output_dir: str = "data/") -> Dict[str, str]:
         """
@@ -443,7 +443,7 @@ class AsteroidDatabase: # WAZNA KLASA- aktualnie jest 6 asteroid
         }
         with open(top_path, 'w', encoding='utf-8') as f:
             json.dump(top_data, f, indent=2, ensure_ascii=False)
-        print(f"✅ Top zagrożenia zapisane do: {top_path}")
+        print(f"✅ Top threats saved to: {top_path}")
 
         return {
             "json": json_path,

@@ -11,7 +11,6 @@ from .map_layers import (
     add_medical_points,
     add_aed_locations,
     add_water_points
-
 )
 
 def render_map(

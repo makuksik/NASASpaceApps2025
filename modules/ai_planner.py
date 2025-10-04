@@ -59,7 +59,7 @@ def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, sho
         return {
             "name": nearest_shelter["name"],
             "coords": (nearest_shelter["lat"], nearest_shelter["lng"]),
-            "mode": "Pieszo" if min_dist < 0.5 else "Samochód",
+            "mode": "On foot" if min_dist < 0.5 else "By car",
             "duration": min_dist * 12 if min_dist < 0.5 else min_dist * 2,  # przybliżone czasy w min
             "distance": min_dist,
             "route": [

@@ -4,9 +4,9 @@ client = openrouteservice.Client(key="YOUR_ORS_API_KEY")
 
 def get_route_info(start_coords, end_coords):
     modes = {
-        "Pieszo": "foot-walking",
-        "Rowerem": "cycling-regular",
-        "Samochodem": "driving-car"
+        "On foot": "foot-walking",
+        "By bike": "cycling-regular",
+        "By car": "driving-car"
     }
 
     routes = []
