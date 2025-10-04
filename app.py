@@ -59,9 +59,6 @@ asteroid_data = {
     "shockwave_radius_km": current_shockwave_radius
 }
 
-# -----------------------------
-# Dane schronów
-# -----------------------------
 shelters_df = pd.DataFrame([
     {"name": "Schron Alfa (ul. Kozielska 4)", "lat": 52.2785, "lng": 20.9812},
     {"name": "Schron Huta Warszawa (Młociny)", "lat": 52.2921, "lng": 20.9357},
@@ -73,10 +70,6 @@ shelters_df = pd.DataFrame([
     {"name": "Schron Żerań (zakład przemysłowy)", "lat": 52.2950, "lng": 21.0200},
     {"name": "Schron Marymont (piwnica techniczna)", "lat": 52.2780, "lng": 20.9800}
 ])
-
-# -----------------------------
-# Dane AED
-# -----------------------------
 aed_df = pd.DataFrame([
     {"name": "AED Metro Centrum", "lat": 52.2298, "lng": 21.0118, "info": "AED przy wejściu głównym, brak respiratora"},
     {"name": "AED Metro Politechnika", "lat": 52.2193, "lng": 21.0182, "info": "AED + respirator w punkcie medycznym"},
@@ -89,6 +82,30 @@ aed_df = pd.DataFrame([
     {"name": "AED Stadion Narodowy", "lat": 52.2390, "lng": 21.0450, "info": "AED + respirator w punkcie medycznym"},
     {"name": "AED Lotnisko Chopina", "lat": 52.1650, "lng": 20.9670, "info": "AED + respirator w strefie kontroli bezpieczeństwa"}
 ])
+medical_points_df = pd.DataFrame([
+    {"name": "Szpital Bielański", "lat": 52.2830, "lng": 20.9560, "type": "hospital"},
+    {"name": "Szpital Czerniakowski", "lat": 52.2080, "lng": 21.0350, "type": "hospital"},
+    {"name": "Szpital Grochowski", "lat": 52.2450, "lng": 21.0850, "type": "hospital"},
+    {"name": "Szpital Praski", "lat": 52.2540, "lng": 21.0400, "type": "hospital"},
+    {"name": "Szpital Południowy", "lat": 52.1500, "lng": 21.0500, "type": "hospital"},
+    {"name": "Szpital Wolski", "lat": 52.2350, "lng": 20.9800, "type": "hospital"},
+    {"name": "Szpital Świętej Rodziny", "lat": 52.2100, "lng": 21.0200, "type": "hospital"},
+    {"name": "Centrum Medyczne Żelazna", "lat": 52.2300, "lng": 20.9950, "type": "hospital"},
+    {"name": "Instytut Psychiatrii i Neurologii", "lat": 52.2000, "lng": 21.0300, "type": "hospital"},
+    {"name": "Szpital MSWiA", "lat": 52.2100, "lng": 21.0150, "type": "hospital"},
+    {"name": "Przychodnia Lekarska Litewska", "lat": 52.2250, "lng": 21.0150, "type": "clinic"},
+    {"name": "Przychodnia Klimczaka", "lat": 52.1600, "lng": 21.0700, "type": "clinic"},
+    {"name": "Przychodnia Kielecka", "lat": 52.2200, "lng": 21.0100, "type": "clinic"},
+    {"name": "Przychodnia Jagiellońska", "lat": 52.2600, "lng": 21.0400, "type": "clinic"},
+    {"name": "Przychodnia Radzymińska", "lat": 52.2700, "lng": 21.0600, "type": "clinic"},
+    {"name": "Centrum Medyczne Damiana", "lat": 52.2050, "lng": 21.0150, "type": "clinic"},
+    {"name": "Centrum Medyczne Mavit", "lat": 52.2800, "lng": 20.9800, "type": "clinic"},
+    {"name": "Punkt Medyczny Inflancka", "lat": 52.2500, "lng": 20.9950, "type": "emergency"},
+    {"name": "Punkt Medyczny Kopernika", "lat": 52.2300, "lng": 21.0050, "type": "emergency"},
+    {"name": "Punkt Medyczny Banacha", "lat": 52.2200, "lng": 21.0000, "type": "emergency"},
+    {"name": "Punkt Medyczny Goszczyńskiego", "lat": 52.2150, "lng": 21.0100, "type": "emergency"}
+])
+
 
 # -----------------------------
 # AI wybiera trasę ewakuacyjną
@@ -112,7 +129,15 @@ else:
 # -----------------------------
 # Renderowanie mapy
 # -----------------------------
-map_object = render_map(asteroid_data, shelters_df, aed_df, user_location, evacuation_routes)
+map_object = render_map(
+    asteroid_data,
+    shelters_df,
+    aed_df,
+    medical_points_df,
+    user_location,
+    evacuation_routes
+)
+
 st.title("🗺️ Mapa zagrożenia")
 st_folium(map_object, width=700, height=500)
 

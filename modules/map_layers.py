@@ -2,15 +2,9 @@ import folium
 import pandas as pd
 
 def add_zones(map_object, circles_coordinates: dict):
-    """
-    Rysuje wszystkie strefy uderzenia asteroid na mapie.
-
-    circles_coordinates: dict - np. map_data['circles_coordinates'] z zagrozenie.py
-    """
     for zone_name, coords in circles_coordinates.items():
         if not coords:
             continue
-        # Kolor i przezroczystość w zależności od typu strefy
         if "crater" in zone_name or "destruction" in zone_name or "severe" in zone_name:
             color = "red"
             fill_opacity = 0.3
@@ -50,9 +44,6 @@ def add_shelters(map_object, shelters_df: pd.DataFrame):
             icon=folium.Icon(color="green", icon="home")
         ).add_to(map_object)
 
-import folium
-import pandas as pd
-
 def add_aed_locations(map_object, aed_df: pd.DataFrame):
     for _, row in aed_df.iterrows():
         if not all(k in row for k in ["lat", "lng", "name", "info"]):
@@ -72,6 +63,30 @@ def add_aed_locations(map_object, aed_df: pd.DataFrame):
             icon=folium.Icon(color=icon_color, icon=icon_type, prefix="fa")
         ).add_to(map_object)
 
+def add_medical_points(map_object, medical_points_df: pd.DataFrame):
+    for _, row in medical_points_df.iterrows():
+        if not all(k in row for k in ["lat", "lng", "name", "type"]):
+            continue
+
+        point_type = row["type"].lower()
+        if point_type == "hospital":
+            icon_color = "red"
+            icon_type = "plus"
+        elif point_type == "clinic":
+            icon_color = "green"
+            icon_type = "stethoscope"
+        elif point_type == "emergency":
+            icon_color = "orange"
+            icon_type = "exclamation-triangle"
+        else:
+            icon_color = "gray"
+            icon_type = "question"
+
+        folium.Marker(
+            location=[row["lat"], row["lng"]],
+            popup=row["name"],
+            icon=folium.Icon(color=icon_color, icon=icon_type, prefix="fa")
+        ).add_to(map_object)
 
 def add_user_location(map_object, lat, lng):
     folium.Marker(
