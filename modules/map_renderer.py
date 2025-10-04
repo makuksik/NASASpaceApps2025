@@ -4,12 +4,21 @@ from .map_layers import (
     add_zones,
     add_impact_marker,
     add_shelters,
+    add_medical_points,
     add_user_location,
     add_evacuation_routes,
-    add_aed_locations  # ⬅️ dodane
+    add_aed_locations, add_water_points  # ⬅️ dodane
 )
 
-def render_map(asteroid_data: dict, shelters_df: pd.DataFrame, aed_df: pd.DataFrame, user_location=None, evacuation_routes=None):
+def render_map(
+    asteroid_data: dict,
+    shelters_df: pd.DataFrame,
+    aed_df: pd.DataFrame,
+    medical_points_df: pd.DataFrame,
+    water_points_df: pd.DataFrame,  # ⬅️ dodane
+    user_location=None,
+    evacuation_routes=None
+):
 
     """
     Renderuje mapę zagrożenia asteroidą z wszystkimi strefami, markerami i trasami ewakuacyjnymi.
@@ -36,6 +45,10 @@ def render_map(asteroid_data: dict, shelters_df: pd.DataFrame, aed_df: pd.DataFr
 
     # AED
     add_aed_locations(m, aed_df)  # ⬅️ dodane
+
+    add_medical_points(m, medical_points_df)
+
+    add_water_points(m, water_points_df)
 
     # Lokalizacja użytkownika
     if user_location:

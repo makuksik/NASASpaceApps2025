@@ -89,3 +89,40 @@ def add_evacuation_routes(map_object, routes: list):
             opacity=0.7,
             popup="Trasa ewakuacyjna"
         ).add_to(map_object)
+
+def add_medical_points(map_object, medical_points_df: pd.DataFrame):
+    for _, row in medical_points_df.iterrows():
+        if not all(k in row for k in ["lat", "lng", "name", "type"]):
+            continue
+
+        point_type = row["type"].lower()
+        if point_type == "hospital":
+            icon_color = "red"
+            icon_type = "plus"
+        elif point_type == "clinic":
+            icon_color = "green"
+            icon_type = "stethoscope"
+        elif point_type == "emergency":
+            icon_color = "orange"
+            icon_type = "exclamation-triangle"
+        else:
+            icon_color = "gray"
+            icon_type = "question"
+
+        folium.Marker(
+            location=[row["lat"], row["lng"]],
+            popup=row["name"],
+            icon=folium.Icon(color=icon_color, icon=icon_type, prefix="fa")
+        ).add_to(map_object)
+
+
+def add_water_points(map_object, water_points_df: pd.DataFrame):
+    for _, row in water_points_df.iterrows():
+        if not all(k in row for k in ["lat", "lng", "name"]):
+            continue
+
+        folium.Marker(
+            location=[row["lat"], row["lng"]],
+            popup=row["name"],
+            icon=folium.Icon(color="blue", icon="tint", prefix="fa")
+        ).add_to(map_object)
