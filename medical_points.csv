@@ -1,0 +1,49 @@
+name,lat,lng,type
+Szpital Bielański (Warszawa),52.2830,20.9560,hospital
+Szpital Czerniakowski (Warszawa),52.2080,21.0350,hospital
+Szpital Grochowski (Warszawa),52.2450,21.0850,hospital
+Szpital Praski (Warszawa),52.2540,21.0400,hospital
+Szpital Południowy (Warszawa),52.1500,21.0500,hospital
+Szpital Wolski (Warszawa),52.2350,20.9800,hospital
+Instytut Matki i Dziecka (Warszawa),52.2100,20.9550,hospital
+Centrum Zdrowia Dziecka (Warszawa),52.2070,21.1250,hospital
+Szpital MSWiA (Warszawa),52.2100,21.0150,hospital
+Szpital Bródnowski (Warszawa),52.2900,21.0450,hospital
+Szpital Solec (Warszawa),52.2300,21.0400,hospital
+Szpital Radomski,51.4020,21.1600,hospital
+Szpital Specjalistyczny w Płocku,52.5400,19.7000,hospital
+Szpital Miejski w Siedlcach,52.1650,22.2850,hospital
+Szpital Wojewódzki w Ostrołęce,53.0800,21.5700,hospital
+Szpital w Ciechanowie,52.8800,20.6150,hospital
+Szpital Powiatowy w Kozienicach,51.5800,21.5500,hospital
+Szpital w Żyrardowie,52.0500,20.4400,hospital
+Szpital w Sochaczewie,52.2300,20.2400,hospital
+Szpital w Mińsku Mazowieckim,52.1800,21.5700,hospital
+Szpital w Mławie,53.1100,20.3800,hospital
+Szpital w Sokołowie Podlaskim,52.4100,22.2500,hospital
+Szpital w Łosicach,52.2100,22.7200,hospital
+Szpital w Garwolinie,51.9000,21.6200,hospital
+Szpital w Wyszkowie,52.5920,21.4600,hospital
+Szpital w Piasecznie,52.0700,21.0260,hospital
+Szpital w Legionowie,52.4000,20.9200,hospital
+Szpital w Pruszkowie,52.1700,20.8100,hospital
+Szpital w Otwocku,52.1000,21.2700,hospital
+Szpital w Grodzisku Mazowieckim,52.1000,20.6300,hospital
+Szpital w Błoniu,52.2000,20.6200,hospital
+Przychodnia Litewska (Warszawa),52.2250,21.0150,clinic
+Przychodnia Klimczaka (Warszawa),52.1600,21.0700,clinic
+Przychodnia Radzymińska (Warszawa),52.2700,21.0600,clinic
+Przychodnia Jagiellońska (Warszawa),52.2600,21.0400,clinic
+Przychodnia Damiana (Warszawa),52.2050,21.0150,clinic
+Przychodnia Mavit (Warszawa),52.2800,20.9800,clinic
+Centrum Medyczne Żelazna (Warszawa),52.2300,20.9950,clinic
+Centrum Medyczne LuxMed (Radom),51.4000,21.1700,clinic
+Centrum Medyczne Medicover (Płock),52.5460,19.7030,clinic
+Centrum Medyczne VitaMed (Siedlce),52.1670,22.2900,clinic
+Punkt Medyczny Inflancka (Warszawa),52.2500,20.9950,emergency
+Punkt Medyczny Kopernika (Warszawa),52.2300,21.0050,emergency
+Punkt Medyczny Banacha (Warszawa),52.2200,21.0000,emergency
+SOR Szpitala Bródnowskiego (Warszawa),52.2900,21.0450,emergency
+SOR Szpitala Radomskiego,51.4020,21.1600,emergency
+SOR Szpitala Płockiego,52.5400,19.7000,emergency
+SOR Szpitala Siedleckiego,52.1650,22.2850,emergency

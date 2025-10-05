@@ -7,31 +7,47 @@ from modules.map_renderer import render_map
 from modules.utils import ORS_API_KEY
 from modules.ai_planner import ai_select_evacuation
 
+st.set_page_config(
+    page_title="Impact Zone",
+    layout="centered",
+    initial_sidebar_state="expanded"
+)
+
+# -----------------------------
+# Ścieżka do folderu z danymi
+# -----------------------------
+DATA_PATH = r"C:\Users\pawol\NASASpaceApps2025\\"
+
+# -----------------------------
+# Wczytanie danych z plików CSV
+# -----------------------------
+shelters_df = pd.read_csv(DATA_PATH + "shelters.csv")
+aed_df = pd.read_csv(DATA_PATH + "aed.csv")
+water_points_df = pd.read_csv(DATA_PATH + "water_points.csv")
+medical_points_df = pd.read_csv(DATA_PATH + "medical_points.csv")
+
 # -----------------------------
 # Inicjalizacja bazy asteroid
 # -----------------------------
 db = AsteroidDatabase()
 
-# --- Sidebar: Wybór asteroidy ---
 st.sidebar.header("⚠️ Impact simulation")
 asteroid_names = [a.name for a in db.asteroids]
-wybrana_asteroida_name = st.sidebar.selectbox("Select an asteroid", asteroid_names)
+selected_asteroid_name = st.sidebar.selectbox("Select an asteroid", asteroid_names)
 
-# --- Lokalizacja użytkownika ---
 st.sidebar.header("📍 Your location")
-user_lat = st.sidebar.number_input("The user's latitude", value=52.2297)
-user_lon = st.sidebar.number_input("The user's longitude", value=21.0122)
+user_lat = st.sidebar.number_input("Latitude", value=52.2297)
+user_lon = st.sidebar.number_input("Longitude", value=21.0122)
 user_location = {"lat": user_lat, "lng": user_lon}
-# --- Wyszukiwanie lokalizacji użytkownika ---
-st.sidebar.header("📍 Wyszukaj lokalizację")
+
+st.sidebar.header("📍 Search location")
 with st.sidebar.form("search_form"):
-    search_address = st.text_input("Wpisz adres lub miejscowość")
-    search_submitted = st.form_submit_button("Szukaj")  # Enter lub kliknięcie wyśle formularz
+    search_address = st.text_input("Enter address or city")
+    search_submitted = st.form_submit_button("Search")
 
 if "user_location" not in st.session_state:
-    st.session_state.user_location = {"lat": 52.2297, "lng": 21.0122}
+    st.session_state.user_location = user_location
 
-# Geokodowanie po wysłaniu formularza
 if search_submitted and search_address:
     geocode_url = "https://api.openrouteservice.org/geocode/search"
     params = {"api_key": ORS_API_KEY, "text": search_address, "size": 1}
@@ -40,155 +56,66 @@ if search_submitted and search_address:
         feature = response.json()["features"][0]
         coords = feature["geometry"]["coordinates"]
         st.session_state.user_location = {"lat": coords[1], "lng": coords[0]}
-        st.sidebar.success(f"Znaleziono: {feature['properties']['label']}")
+        st.sidebar.success(f"Found: {feature['properties']['label']}")
     else:
-        st.sidebar.error("Nie znaleziono lokalizacji.")
+        st.sidebar.error("Location not found.")
 
-# --- Lokalizacja uderzenia asteroidy ---
-st.sidebar.header("🌋 Impact Location")
-impact_lat = st.sidebar.number_input("Latitude of impact", value=52.2550)
-impact_lon = st.sidebar.number_input("Longitude of impact", value=21.0400)
+st.sidebar.header("🌋 Impact location")
+impact_lat = st.sidebar.number_input("Impact latitude", value=52.2550)
+impact_lon = st.sidebar.number_input("Impact longitude", value=21.0400)
 
-# --- Suwaki czasowe ---
-time_to_impact_min = st.sidebar.slider("⏱️ Minutes to strike", 0, 60, 15)
+time_to_impact_min = st.sidebar.slider("⏱️ Minutes to impact", 0, 60, 15)
 time_after_impact_min = st.sidebar.slider("🌪️ Minutes after impact", 0, 300, 0)
 
-# --- Dane asteroid i uderzenia ---
-wybrana_asteroida = next(a for a in db.asteroids if a.name == wybrana_asteroida_name)
-impact_details = db.calculate_impact_for_location(wybrana_asteroida, impact_lat, impact_lon)
+selected_asteroid = next(a for a in db.asteroids if a.name == selected_asteroid_name)
+impact_details = db.calculate_impact_for_location(selected_asteroid, impact_lat, impact_lon)
 
-max_shockwave_radius = impact_details["destruction_zones"]["shockwave_radius_km"]
-shockwave_speed_km_per_min = max_shockwave_radius / 300
+max_radius = impact_details["destruction_zones"]["shockwave_radius_km"]
+shockwave_speed = max_radius / 300
 
-# 🔁 Obliczenie aktualnego promienia fali uderzeniowej
 if time_to_impact_min > 0:
-    current_shockwave_radius = min(max_shockwave_radius, shockwave_speed_km_per_min * (60 - time_to_impact_min))
+    current_radius = min(max_radius, shockwave_speed * (60 - time_to_impact_min))
 else:
-    current_shockwave_radius = min(max_shockwave_radius, shockwave_speed_km_per_min * time_after_impact_min)
+    current_radius = min(max_radius, shockwave_speed * time_after_impact_min)
 
-# --- Przygotowanie danych do render_map ---
 asteroid_data = {
     "asteroid_name": impact_details["asteroid_name"],
     "impact_coordinates": {"lat": impact_lat, "lon": impact_lon},
     "circles_coordinates": impact_details.get("circles_coordinates", {}),
     "destruction_zones": impact_details.get("destruction_zones", {}),
-    "threat_level": impact_details.get("threat_level", "nieznany"),
+    "threat_level": impact_details.get("threat_level", "unknown"),
     "energy_megatons": impact_details.get("energy_megatons", 0),
     "historical_comparison": impact_details.get("historical_comparison", ""),
     "total_affected_area_km2": impact_details.get("total_affected_area_km2", 0),
     "trajectory": impact_details.get("trajectory", ""),
     "impact_probability": impact_details.get("impact_probability", 0.0),
-    "shockwave_radius_km": current_shockwave_radius
+    "shockwave_radius_km": current_radius
 }
 
-water_points_df = pd.DataFrame([
-    {"name": "ul. Radiowa 18 (Bemowo)", "lat": 52.2545, "lng": 20.9132},
-    {"name": "ul. Powstańców Śląskich 101 (Bemowo)", "lat": 52.2540, "lng": 20.9285},
-    {"name": "ul. Kochanowskiego 1 (Bielany)", "lat": 52.2805, "lng": 20.9480},
-    {"name": "ul. Daniłowskiego 2 (Bielany)", "lat": 52.2780, "lng": 20.9515},
-    {"name": "ul. Wolumen 3 (Bielany)", "lat": 52.2780, "lng": 20.9510},
-    {"name": "ul. Puławska 266 (Mokotów)", "lat": 52.2050, "lng": 21.0200},
-    {"name": "ul. Dąbrowskiego 75 (Mokotów)", "lat": 52.2100, "lng": 21.0150},
-    {"name": "ul. Barska 16/20 (Ochota)", "lat": 52.2190, "lng": 20.9830},
-    {"name": "ul. Pasteura 10 (Ochota)", "lat": 52.2180, "lng": 20.9800},
-    {"name": "ul. Jagiellońska 56 (Praga Północ)", "lat": 52.2585, "lng": 21.0400},
-    {"name": "ul. Targowa 62 (Praga Północ)", "lat": 52.2530, "lng": 21.0450},
-    {"name": "ul. Pileckiego 122 (Ursynów)", "lat": 52.1505, "lng": 21.0500},
-    {"name": "ul. Dunikowskiego 4 (Ursynów)", "lat": 52.1550, "lng": 21.0450},
-    {"name": "ul. Górczewska 200 (Wola)", "lat": 52.2350, "lng": 20.9800},
-    {"name": "ul. Młynarska 42 (Wola)", "lat": 52.2370, "lng": 20.9750},
-    {"name": "ul. Żelazna 85 (Wola)", "lat": 52.2320, "lng": 20.9840},
-    {"name": "ul. Słowackiego 6/8 (Żoliborz)", "lat": 52.2650, "lng": 20.9800},
-    {"name": "ul. Broniewskiego 9 (Żoliborz)", "lat": 52.2655, "lng": 20.9755},
-    {"name": "ul. Mehoffera 4 (Białołęka)", "lat": 52.3150, "lng": 21.0100},
-    {"name": "ul. Świderska 35 (Białołęka)", "lat": 52.3200, "lng": 21.0200},
-    {"name": "ul. Głębocka 66 (Targówek)", "lat": 52.2950, "lng": 21.0500},
-    {"name": "ul. Kondratowicza 27 (Targówek)", "lat": 52.2900, "lng": 21.0450},
-    {"name": "ul. Zawodzie 16 (Wilanów)", "lat": 52.1800, "lng": 21.0800},
-    {"name": "ul. Klimczaka 8 (Wilanów)", "lat": 52.1650, "lng": 21.0900},
-    {"name": "ul. Komitetu Obrony Robotników 45 (Włochy)", "lat": 52.1850, "lng": 20.9500},
-    {"name": "ul. 1 Sierpnia 36 (Włochy)", "lat": 52.1900, "lng": 20.9600},
-    {"name": "ul. Cierlicka 15 (Ursus)", "lat": 52.2000, "lng": 20.9200},
-    {"name": "ul. Walerego Sławka 5 (Ursus)", "lat": 52.2050, "lng": 20.9300},
-    {"name": "ul. Marsa 56 (Rembertów)", "lat": 52.2600, "lng": 21.1100},
-    {"name": "ul. Chełmżyńska 180 (Rembertów)", "lat": 52.2650, "lng": 21.1200},
-    {"name": "ul. Świętokrzyska 20 (Śródmieście)", "lat": 52.2330, "lng": 21.0100},
-    {"name": "ul. Nowowiejska 10 (Śródmieście)", "lat": 52.2250, "lng": 21.0050}
-])
-
-
 # -----------------------------
-# Dane schronów
-# -----------------------------
-shelters_df = pd.DataFrame([
-    {"name": "Schron Alfa (ul. Kozielska 4)", "lat": 52.2785, "lng": 20.9812},
-    {"name": "Schron Huta Warszawa (Młociny)", "lat": 52.2921, "lng": 20.9357},
-    {"name": "Schron Bielany (osiedlowy)", "lat": 52.2840, "lng": 20.9560},
-    {"name": "Schron Wola (podziemia biurowca)", "lat": 52.2350, "lng": 20.9800},
-    {"name": "Schron Mokotów (garaż podziemny)", "lat": 52.2000, "lng": 21.0200},
-    {"name": "Schron Ursynów (garaż podziemny)", "lat": 52.1500, "lng": 21.0500},
-    {"name": "Schron Praga Północ (piwnica szkoły)", "lat": 52.2580, "lng": 21.0400},
-    {"name": "Schron Żerań (zakład przemysłowy)", "lat": 52.2950, "lng": 21.0200},
-    {"name": "Schron Marymont (piwnica techniczna)", "lat": 52.2780, "lng": 20.9800}
-])
-aed_df = pd.DataFrame([
-    {"name": "AED Metro Centrum", "lat": 52.2298, "lng": 21.0118, "info": "AED przy wejściu głównym, brak respiratora"},
-    {"name": "AED Metro Politechnika", "lat": 52.2193, "lng": 21.0182, "info": "AED + respirator w punkcie medycznym"},
-    {"name": "AED Metro Świętokrzyska", "lat": 52.2335, "lng": 21.0106, "info": "AED przy kasach, brak respiratora"},
-    {"name": "AED Metro Ratusz Arsenał", "lat": 52.2430, "lng": 21.0045, "info": "AED + respirator w dyżurce ochrony"},
-    {"name": "AED Pałac Kultury", "lat": 52.2319, "lng": 21.0059, "info": "AED w recepcji, brak respiratora"},
-    {"name": "AED Hala Torwar", "lat": 52.2220, "lng": 21.0450, "info": "AED + respirator w punkcie medycznym"},
-    {"name": "AED Biblioteka UW", "lat": 52.2405, "lng": 21.0205, "info": "AED przy wejściu głównym, brak respiratora"},
-    {"name": "AED Złote Tarasy", "lat": 52.2305, "lng": 21.0030, "info": "AED + respirator w punkcie ochrony"},
-    {"name": "AED Stadion Narodowy", "lat": 52.2390, "lng": 21.0450, "info": "AED + respirator w punkcie medycznym"},
-    {"name": "AED Lotnisko Chopina", "lat": 52.1650, "lng": 20.9670, "info": "AED + respirator w strefie kontroli bezpieczeństwa"}
-])
-medical_points_df = pd.DataFrame([
-    {"name": "Szpital Bielański", "lat": 52.2830, "lng": 20.9560, "type": "hospital"},
-    {"name": "Szpital Czerniakowski", "lat": 52.2080, "lng": 21.0350, "type": "hospital"},
-    {"name": "Szpital Grochowski", "lat": 52.2450, "lng": 21.0850, "type": "hospital"},
-    {"name": "Szpital Praski", "lat": 52.2540, "lng": 21.0400, "type": "hospital"},
-    {"name": "Szpital Południowy", "lat": 52.1500, "lng": 21.0500, "type": "hospital"},
-    {"name": "Szpital Wolski", "lat": 52.2350, "lng": 20.9800, "type": "hospital"},
-    {"name": "Szpital Świętej Rodziny", "lat": 52.2100, "lng": 21.0200, "type": "hospital"},
-    {"name": "Centrum Medyczne Żelazna", "lat": 52.2300, "lng": 20.9950, "type": "hospital"},
-    {"name": "Instytut Psychiatrii i Neurologii", "lat": 52.2000, "lng": 21.0300, "type": "hospital"},
-    {"name": "Szpital MSWiA", "lat": 52.2100, "lng": 21.0150, "type": "hospital"},
-    {"name": "Przychodnia Lekarska Litewska", "lat": 52.2250, "lng": 21.0150, "type": "clinic"},
-    {"name": "Przychodnia Klimczaka", "lat": 52.1600, "lng": 21.0700, "type": "clinic"},
-    {"name": "Przychodnia Kielecka", "lat": 52.2200, "lng": 21.0100, "type": "clinic"},
-    {"name": "Przychodnia Jagiellońska", "lat": 52.2600, "lng": 21.0400, "type": "clinic"},
-    {"name": "Przychodnia Radzymińska", "lat": 52.2700, "lng": 21.0600, "type": "clinic"},
-    {"name": "Centrum Medyczne Damiana", "lat": 52.2050, "lng": 21.0150, "type": "clinic"},
-    {"name": "Centrum Medyczne Mavit", "lat": 52.2800, "lng": 20.9800, "type": "clinic"},
-    {"name": "Punkt Medyczny Inflancka", "lat": 52.2500, "lng": 20.9950, "type": "emergency"},
-    {"name": "Punkt Medyczny Kopernika", "lat": 52.2300, "lng": 21.0050, "type": "emergency"},
-    {"name": "Punkt Medyczny Banacha", "lat": 52.2200, "lng": 21.0000, "type": "emergency"},
-    {"name": "Punkt Medyczny Goszczyńskiego", "lat": 52.2150, "lng": 21.0100, "type": "emergency"}
-])
-
-# -----------------------------
-# AI wybiera trasę ewakuacyjną
+# AI evacuation route
 # -----------------------------
 ai_decision = ai_select_evacuation(
     st.session_state.user_location,
     shelters_df,
     impact_lat,
     impact_lon,
-    current_shockwave_radius,
-    time_to_impact_min
+    current_radius,
+    time_to_impact_min,
+    ors_api_key=ORS_API_KEY
 )
 
 if ai_decision:
-    st.sidebar.success(f"🧠 AI chose: {ai_decision['name']} ({ai_decision['mode']}, {int(ai_decision['duration'])} min)")
     evacuation_routes = [ai_decision["route"]]
+    st.sidebar.success(f"🧠 AI chose: {ai_decision['name']} ({ai_decision['mode']}, {int(ai_decision['duration'])} min)")
 else:
-    st.sidebar.error("❌ AI failed to find a safe route in time!")
-    evacuation_routes = None
+    evacuation_routes = []
+    st.sidebar.error("❌ No safe route found in time!")
 
 # -----------------------------
-# Renderowanie mapy
+# Map rendering
 # -----------------------------
+st.markdown("### 🗺️ Threat Map")
 map_object = render_map(
     asteroid_data,
     shelters_df,
@@ -198,24 +125,22 @@ map_object = render_map(
     st.session_state.user_location,
     evacuation_routes
 )
-
-st.title("🗺️ Threat Map")
-st_folium(map_object, width=700, height=500)
+st_folium(map_object, use_container_width=True, height=500)
 
 # -----------------------------
-# Informacje o asteroidzie
+# Asteroid info
 # -----------------------------
-st.subheader(f"💥 Asteroid: {asteroid_data['asteroid_name']}")
+st.markdown("### 💥 Asteroid details")
 st.write(f"**Threat level:** {asteroid_data['threat_level']}")
 st.write(f"**Impact energy:** {asteroid_data['energy_megatons']} Mt TNT")
 st.write(f"**Historical comparison:** {asteroid_data['historical_comparison']}")
 st.write(f"**Area of destruction:** {asteroid_data['total_affected_area_km2']:,} km²")
-st.write(f"**Impact Trajectory:** {asteroid_data['trajectory']}")
+st.write(f"**Trajectory:** {asteroid_data['trajectory']}")
 st.write(f"**Impact probability:** {asteroid_data['impact_probability']:.5f}")
-st.write(f"**Shockwave radius:** {current_shockwave_radius:.2f} km")
+st.write(f"**Shockwave radius:** {current_radius:.2f} km")
 
 # -----------------------------
-# Informacje o trasie
+# Evacuation info
 # -----------------------------
 with st.expander("📋 Evacuation details"):
     if ai_decision:
@@ -225,15 +150,17 @@ with st.expander("📋 Evacuation details"):
         st.warning("No escape route available.")
 
 # -----------------------------
-# Ostrzeżenia czasowe
+# Time warnings
 # -----------------------------
 if time_to_impact_min > 0:
     st.warning(f"☄️ Impact will occur in {time_to_impact_min} minutes.")
 else:
     st.error(f"💥 Impact occurred {time_after_impact_min} minutes ago.")
 
-st.markdown("## 🧭 Instructions for action after a meteorite impact")
-
+# -----------------------------
+# Post-impact instructions
+# -----------------------------
+st.markdown("### 🧭 Instructions after impact")
 etap = st.selectbox("Select stage", ["⏱️ First hours", "📆 First days", "🗓️ First weeks"])
 
 if etap == "⏱️ First hours":
@@ -247,8 +174,8 @@ if etap == "⏱️ First hours":
 - **Check the availability of an AED and ventilator.**
 """)
 
-elif etap == "🗓️ First days":
-    with st.expander("Behavior in the first weeks (0–3 days)", expanded=True):
+elif etap == "📆 First days":
+    with st.expander("Behavior in the first days (6h–72h)", expanded=True):
         st.markdown("""
 - **Assess the surroundings.** If the shelter is damaged, consider a cautious evacuation.
 - **Avoid contact with groundwater.**

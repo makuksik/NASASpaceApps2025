@@ -1,7 +1,7 @@
-from .utils import get_route_info
+from .utils import get_route_info, get_realistic_route
 from .evacuation_planner import haversine
 
-def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, shockwave_radius_km, time_to_impact_min):
+def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, shockwave_radius_km, time_to_impact_min, ors_api_key=None):
     """
     Wybiera najlepszą trasę ewakuacyjną na podstawie dystansu, czasu do uderzenia i promienia zagrożenia.
 
@@ -10,6 +10,7 @@ def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, sho
     impact_lat, impact_lng: float - współrzędne uderzenia
     shockwave_radius_km: float - aktualny promień fali uderzeniowej
     time_to_impact_min: int - czas pozostały do uderzenia
+    ors_api_key: str - klucz API do OpenRouteService
     """
     candidates = []
 
@@ -21,20 +22,25 @@ def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, sho
         # Sprawdzamy, czy schron jest poza strefą zagrożenia
         if distance_to_impact > shockwave_radius_km:
             try:
-                # Pobieramy możliwe trasy
-                routes = get_route_info((user_location["lat"], user_location["lng"]), shelter_coords)
-            except:
+                # Pobieramy możliwe trasy z ORS
+                routes = get_route_info(
+                    [user_location["lng"], user_location["lat"]],
+                    [row["lng"], row["lat"]],
+                    ors_api_key
+                )
+            except Exception as e:
+                print("❌ Błąd get_route_info:", e)
                 continue
 
             for r in routes:
                 # Sprawdzamy, czy czas trasy mieści się w pozostałym czasie
                 if r["duration_min"] < time_to_impact_min and r["duration_min"] < 999:
-                    # Wyliczamy prosty scoring: odległość od zagrożenia + czas trasy
+                    # Wyliczamy scoring: im dalej od zagrożenia i szybciej tym lepiej
                     score = (distance_to_impact - shockwave_radius_km) * 2 - r["duration_min"]
                     candidates.append({
                         "name": row["name"],
                         "coords": shelter_coords,
-                        "mode": r["label"],  # pieszo, rowerem, samochodem
+                        "mode": r["label"],
                         "duration": r["duration_min"],
                         "distance": r["distance_km"],
                         "route": r["route"],
@@ -46,7 +52,7 @@ def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, sho
     if candidates:
         return candidates[0]
 
-    # Jeśli żaden schron poza zagrożeniem nie jest dostępny, szukamy najbliższego
+    # Fallback: najbliższy schron bez trasy ORS
     min_dist = float("inf")
     nearest_shelter = None
     for _, row in shelters_df.iterrows():
@@ -56,16 +62,26 @@ def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, sho
             nearest_shelter = row
 
     if nearest_shelter is not None:
+        try:
+            route_coords = get_realistic_route(
+                user_location,
+                {"lat": nearest_shelter["lat"], "lng": nearest_shelter["lng"]},
+                ors_api_key
+            )
+        except Exception as e:
+            print("❌ Błąd fallback ORS:", e)
+            route_coords = [
+                [user_location["lat"], user_location["lng"]],
+                [nearest_shelter["lat"], nearest_shelter["lng"]]
+            ]
+
         return {
             "name": nearest_shelter["name"],
             "coords": (nearest_shelter["lat"], nearest_shelter["lng"]),
             "mode": "On foot" if min_dist < 0.5 else "By car",
-            "duration": min_dist * 12 if min_dist < 0.5 else min_dist * 2,  # przybliżone czasy w min
+            "duration": min_dist * 12 if min_dist < 0.5 else min_dist * 2,
             "distance": min_dist,
-            "route": [
-                [user_location["lat"], user_location["lng"]],
-                [nearest_shelter["lat"], nearest_shelter["lng"]]
-            ],
+            "route": route_coords,
             "score": 0
         }
 
