@@ -6,6 +6,8 @@ from modules.zagrozenie import AsteroidDatabase
 from modules.map_renderer import render_map
 from modules.ai_planner import ai_select_evacuation
 from modules.utils import ORS_API_KEY, client
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 st.set_page_config(
     page_title="Impact Zone",
@@ -25,38 +27,27 @@ asteroid_names = [a.name for a in db.asteroids]
 selected_asteroid_name = st.sidebar.selectbox("Select an asteroid", asteroid_names)
 
 st.sidebar.header("📍 Your location")
-user_lat = st.sidebar.number_input("Latitude", value=52.2297)
-user_lon = st.sidebar.number_input("Longitude", value=21.0122)
-user_location = {"lat": user_lat, "lng": user_lon}
 
-st.sidebar.header("📍 Search a location")
-with st.sidebar.form("search_form"):
-    search_address = st.text_input("Enter address or city")
-    search_submitted = st.form_submit_button("Search")
-
+# inicjalizacja session_state jeśli nie ma
 if "user_location" not in st.session_state:
-    st.session_state.user_location = user_location
+    st.session_state.user_location = {"lat": 52.2297, "lng": 21.0122}
 
-if "geocode_cache" not in st.session_state:
-    st.session_state.geocode_cache = {}
+# number_input powiązany z session_state, bez nadpisywania
+user_lat = st.sidebar.number_input(
+    "Latitude",
+    value=st.session_state.user_location["lat"],
+    key="lat_input",
+    format="%.2f"
+)
+user_lon = st.sidebar.number_input(
+    "Longitude",
+    value=st.session_state.user_location["lng"],
+    key="lon_input",
+    format="%.2f"
+)
 
-if search_submitted and search_address:
-    if search_address in st.session_state.geocode_cache:
-        st.session_state.user_location = st.session_state.geocode_cache[search_address]
-    else:
-        try:
-            geocode_result = client.pelias_search(search_address, size=1)
-            features = geocode_result.get("features", [])
-            if features:
-                feature = features[0]
-                coords = feature["geometry"]["coordinates"]
-                st.session_state.user_location = {"lat": coords[1], "lng": coords[0]}
-                st.session_state.geocode_cache[search_address] = st.session_state.user_location
-                st.sidebar.success(f"Found: {feature['properties']['label']}")
-            else:
-                st.sidebar.error("Can't find a location.")
-        except Exception as e:
-            st.sidebar.error(f"Geocoding error: {e}")
+if (user_lat, user_lon) != (st.session_state.user_location["lat"], st.session_state.user_location["lng"]):
+    st.session_state.user_location = {"lat": user_lat, "lng": user_lon}
 
 st.sidebar.header("🌋 Impact location")
 impact_lat = st.sidebar.number_input("Impact latitude", value=52.2550)

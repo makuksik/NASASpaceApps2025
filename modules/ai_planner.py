@@ -1,6 +1,8 @@
+import streamlit as st
 from .utils import get_route_info
 from .evacuation_planner import haversine
 
+@st.cache_data
 def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, shockwave_radius_km, time_to_impact_min, ors_api_key=None):
     """
     Wybiera najlepszą trasę ewakuacyjną na podstawie dystansu, czasu do uderzenia i promienia zagrożenia.
@@ -14,15 +16,21 @@ def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, sho
     """
     candidates = []
 
-    for _, row in shelters_df.iterrows():
+    # 🔹 wybierz 5 najbliższych schronów do użytkownika
+    shelters_df["dist_to_user"] = shelters_df.apply(
+        lambda row: haversine((user_location["lat"], user_location["lng"]), (row["lat"], row["lng"])),
+        axis=1
+    )
+    nearest_shelters = shelters_df.nsmallest(3, "dist_to_user")
+
+    for _, row in nearest_shelters.iterrows():
         shelter_coords = (row["lat"], row["lng"])
         distance_to_impact = haversine(shelter_coords, (impact_lat, impact_lng))
-        distance_to_user = haversine((user_location["lat"], user_location["lng"]), shelter_coords)
 
         # Sprawdzamy, czy schron jest poza strefą zagrożenia
         if distance_to_impact > shockwave_radius_km:
             try:
-                # Pobieramy możliwe trasy z ORS
+                # Pobieramy możliwe trasy z ORS (z cache)
                 routes = get_route_info((user_location["lat"], user_location["lng"]), shelter_coords)
             except:
                 continue
@@ -48,35 +56,20 @@ def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, sho
         return candidates[0]
 
     # Fallback: najbliższy schron bez trasy ORS
-    min_dist = float("inf")
-    nearest_shelter = None
-    for _, row in shelters_df.iterrows():
-        dist = haversine((user_location["lat"], user_location["lng"]), (row["lat"], row["lng"]))
-        if dist < min_dist:
-            min_dist = dist
-            nearest_shelter = row
-
-    if nearest_shelter is not None:
-        try:
-            route_coords = get_realistic_route(
-                user_location,
-                {"lat": nearest_shelter["lat"], "lng": nearest_shelter["lng"]},
-                ors_api_key
-            )
-        except Exception as e:
-            print("❌ Błąd fallback ORS:", e)
-            route_coords = [
-                [user_location["lat"], user_location["lng"]],
-                [nearest_shelter["lat"], nearest_shelter["lng"]]
-            ]
+    if not nearest_shelters.empty:
+        nearest = nearest_shelters.iloc[0]
+        min_dist = nearest["dist_to_user"]
 
         return {
-            "name": nearest_shelter["name"],
-            "coords": (nearest_shelter["lat"], nearest_shelter["lng"]),
+            "name": nearest["name"],
+            "coords": (nearest["lat"], nearest["lng"]),
             "mode": "On foot" if min_dist < 0.5 else "By car",
             "duration": min_dist * 12 if min_dist < 0.5 else min_dist * 2,
             "distance": min_dist,
-            "route": route_coords,
+            "route": [
+                [user_location["lat"], user_location["lng"]],
+                [nearest["lat"], nearest["lng"]]
+            ],
             "score": 0
         }
 
