@@ -8,7 +8,7 @@ By integrating NASA asteroid datasets, geolocation services, and Google Maps API
 
 ---
 
-## 🌍 Vision
+# 🌍 Vision
 
 While currently focused on asteroid threats, Impact Zone is built to evolve into a universal emergency alert system. Future expansions aim to cover:
 
@@ -20,7 +20,7 @@ Integrated with public platforms like **mObywatel**, it could deliver life-savin
 
 ---
 
-## 🧠 Features
+# 🧠 Features
 
 - **Real-Time Threat Detection**: Monitors NASA’s asteroid datasets for hazardous objects.
 - **Impact Prediction**: Calculates potential impact zones and consequences.
@@ -30,7 +30,7 @@ Integrated with public platforms like **mObywatel**, it could deliver life-savin
 
 ---
 
-## 🛠️ Technologies Used
+# 🛠️ Technologies Used
 
 - **Python**: Core language for backend logic and data processing.
 - **Streamlit**: Interactive frontend for real-time visualization.
@@ -40,9 +40,16 @@ Integrated with public platforms like **mObywatel**, it could deliver life-savin
 
 ---
 
-## 🚨 How to Run
+# 🚨 How to Run
 
 To launch the application locally, make sure you have Python and Streamlit installed. Then run:
 
 ```bash
 streamlit run app.py
+```
+
+# Team Młyn
+## Contributors:
+- Bartosz Kundera
+- Mateusz Petelicki
+- Paweł Kaleta
