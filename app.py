@@ -22,10 +22,10 @@ user_lat = st.sidebar.number_input("The user's latitude", value=52.2297)
 user_lon = st.sidebar.number_input("The user's longitude", value=21.0122)
 user_location = {"lat": user_lat, "lng": user_lon}
 # --- Wyszukiwanie lokalizacji użytkownika ---
-st.sidebar.header("📍 Wyszukaj lokalizację")
+st.sidebar.header("📍 Search a location")
 with st.sidebar.form("search_form"):
-    search_address = st.text_input("Wpisz adres lub miejscowość")
-    search_submitted = st.form_submit_button("Szukaj")  # Enter lub kliknięcie wyśle formularz
+    search_address = st.text_input("Search a location")
+    search_submitted = st.form_submit_button("Find")  # Enter lub kliknięcie wyśle formularz
 
 if "user_location" not in st.session_state:
     st.session_state.user_location = {"lat": 52.2297, "lng": 21.0122}
@@ -49,11 +49,11 @@ if search_submitted and search_address:
                 coords = feature["geometry"]["coordinates"]
                 st.session_state.user_location = {"lat": coords[1], "lng": coords[0]}
                 st.session_state.geocode_cache[search_address] = st.session_state.user_location
-                st.sidebar.success(f"Znaleziono: {feature['properties']['label']}")
+                st.sidebar.success(f"Found: {feature['properties']['label']}")
             else:
-                st.sidebar.error("Nie znaleziono lokalizacji.")
+                st.sidebar.error("Can't find a location.")
         except Exception as e:
-            st.sidebar.error(f"Błąd geokodowania: {e}")
+            st.sidebar.error(f"Geocoding error: {e}")
 
 
 # --- Lokalizacja uderzenia asteroidy ---
