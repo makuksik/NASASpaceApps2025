@@ -1,13 +1,10 @@
-﻿import requests
-import streamlit as st
+﻿import streamlit as st
 import pandas as pd
 from streamlit_folium import st_folium
 from modules.zagrozenie import AsteroidDatabase
 from modules.map_renderer import render_map
 from modules.ai_planner import ai_select_evacuation
-from modules.utils import ORS_API_KEY, client
-import logging
-logging.basicConfig(level=logging.DEBUG)
+from modules.utils import ORS_API_KEY
 
 st.set_page_config(
     page_title="Impact Zone",

@@ -18,7 +18,7 @@ def render_map(
     shelters_df: pd.DataFrame,
     aed_df: pd.DataFrame,
     medical_points_df: pd.DataFrame,
-    water_points_df: pd.DataFrame,  # ⬅️ dodane
+    water_points_df: pd.DataFrame,
     user_location=None,
     evacuation_routes=None
 ):
@@ -39,7 +39,7 @@ def render_map(
     add_medical_points(m, medical_points_df)
 
     # AED
-    add_aed_locations(m, aed_df)  # ⬅️ dodane
+    add_aed_locations(m, aed_df) 
 
     add_medical_points(m, medical_points_df)
 
