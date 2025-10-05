@@ -92,7 +92,7 @@ def add_user_location(map_object, lat, lng):
     folium.Marker(
         location=[lat, lng],
         popup="Twoja lokalizacja",
-        icon=folium.Icon(color="blue", icon="user")
+        icon=folium.Icon(color="darkpurple", icon="user")
     ).add_to(map_object)
 
 def add_evacuation_routes(map_object, routes: list):
