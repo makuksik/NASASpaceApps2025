@@ -39,11 +39,11 @@ class Asteroid:
     def get_trajectory_info(self) -> str:
         """Zwraca informację o trajektorii"""
         if self.trajectory_angle < 30:
-            return "płaska (niebezpieczna - większy zasięg)"
+            return "flat (dangerous - longer range)"
         elif self.trajectory_angle < 60:
-            return "umiarkowana"
+            return "moderate"
         else:
-            return "stroma (mniejszy zasięg powierzchniowy)"
+            return "steep (shorter surface range)"
 
 class ImpactZone:
     """
