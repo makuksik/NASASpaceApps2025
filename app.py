@@ -4,7 +4,6 @@ import pandas as pd
 from streamlit_folium import st_folium
 from modules.zagrozenie import AsteroidDatabase
 from modules.map_renderer import render_map
-from modules.utils import ORS_API_KEY
 from modules.ai_planner import ai_select_evacuation
 
 # -----------------------------
@@ -32,17 +31,30 @@ if "user_location" not in st.session_state:
     st.session_state.user_location = {"lat": 52.2297, "lng": 21.0122}
 
 # Geokodowanie po wysłaniu formularza
+from modules.utils import client, get_route_info  # klient ORS już załadowany z ORS_API_KEY
+
+# Geokodowanie po wysłaniu formularza
+if "geocode_cache" not in st.session_state:
+    st.session_state.geocode_cache = {}
+
 if search_submitted and search_address:
-    geocode_url = "https://api.openrouteservice.org/geocode/search"
-    params = {"api_key": ORS_API_KEY, "text": search_address, "size": 1}
-    response = requests.get(geocode_url, params=params)
-    if response.status_code == 200 and response.json().get("features"):
-        feature = response.json()["features"][0]
-        coords = feature["geometry"]["coordinates"]
-        st.session_state.user_location = {"lat": coords[1], "lng": coords[0]}
-        st.sidebar.success(f"Znaleziono: {feature['properties']['label']}")
+    if search_address in st.session_state.geocode_cache:
+        st.session_state.user_location = st.session_state.geocode_cache[search_address]
     else:
-        st.sidebar.error("Nie znaleziono lokalizacji.")
+        try:
+            geocode_result = client.pelias_search(search_address, size=1)
+            features = geocode_result.get("features", [])
+            if features:
+                feature = features[0]
+                coords = feature["geometry"]["coordinates"]
+                st.session_state.user_location = {"lat": coords[1], "lng": coords[0]}
+                st.session_state.geocode_cache[search_address] = st.session_state.user_location
+                st.sidebar.success(f"Znaleziono: {feature['properties']['label']}")
+            else:
+                st.sidebar.error("Nie znaleziono lokalizacji.")
+        except Exception as e:
+            st.sidebar.error(f"Błąd geokodowania: {e}")
+
 
 # --- Lokalizacja uderzenia asteroidy ---
 st.sidebar.header("🌋 Impact Location")
