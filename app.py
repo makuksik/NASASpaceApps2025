@@ -5,8 +5,9 @@ from streamlit_folium import st_folium
 from modules.zagrozenie import AsteroidDatabase
 from modules.map_renderer import render_map
 from modules.ai_planner import ai_select_evacuation
-
-ORS_API_KEY = "ORS_API_KEY=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImJjNjIwMjM4OGM3MTQyMWNhNDM2NzgxNjJkMjllYTA5IiwiaCI6Im11cm11cjY0In0="
+ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjE0OTQ5NTRkMTZjMTQ2OTBhNTljMTIwMWQ0MmExYjUzIiwiaCI6Im11cm11cjY0In0="
+from modules.utils import get_client, get_route_info
+client = get_client(ORS_API_KEY)
 
 st.set_page_config(
     page_title="Impact Zone",
@@ -14,22 +15,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# -----------------------------
-# Ścieżka do folderu z danymi
-# -----------------------------
 DATA_PATH = r"C:\Users\pawol\NASASpaceApps2025\\"
 
-# -----------------------------
-# Wczytanie danych z plików CSV
-# -----------------------------
 shelters_df = pd.read_csv(DATA_PATH + "shelters.csv")
 aed_df = pd.read_csv(DATA_PATH + "aed.csv")
 water_points_df = pd.read_csv(DATA_PATH + "water_points.csv")
 medical_points_df = pd.read_csv(DATA_PATH + "medical_points.csv")
 
-# -----------------------------
-# Inicjalizacja bazy asteroid
-# -----------------------------
 db = AsteroidDatabase()
 
 st.sidebar.header("⚠️ Impact simulation")
@@ -41,37 +33,14 @@ user_lat = st.sidebar.number_input("Latitude", value=52.2297)
 user_lon = st.sidebar.number_input("Longitude", value=21.0122)
 user_location = {"lat": user_lat, "lng": user_lon}
 
-
-st.sidebar.header("📍 Search location")
+st.sidebar.header("📍 Search a location")
 with st.sidebar.form("search_form"):
     search_address = st.text_input("Enter address or city")
     search_submitted = st.form_submit_button("Search")
 
-# --- Wyszukiwanie lokalizacji użytkownika ---
-st.sidebar.header("📍 Search a location")
-with st.sidebar.form("search_form"):
-    search_address = st.text_input("Search a location")
-    search_submitted = st.form_submit_button("Find")  # Enter lub kliknięcie wyśle formularz
-
 if "user_location" not in st.session_state:
     st.session_state.user_location = user_location
 
-if search_submitted and search_address:
-    geocode_url = "https://api.openrouteservice.org/geocode/search"
-    params = {"api_key": ORS_API_KEY, "text": search_address, "size": 1}
-    response = requests.get(geocode_url, params=params)
-    if response.status_code == 200 and response.json().get("features"):
-        feature = response.json()["features"][0]
-        coords = feature["geometry"]["coordinates"]
-        st.session_state.user_location = {"lat": coords[1], "lng": coords[0]}
-        st.sidebar.success(f"Found: {feature['properties']['label']}")
-    else:
-        st.sidebar.error("Location not found.")
-
-# Geokodowanie po wysłaniu formularza
-from modules.utils import client, get_route_info, ORS_API_KEY  # klient ORS już załadowany z ORS_API_KEY
-
-# Geokodowanie po wysłaniu formularza
 if "geocode_cache" not in st.session_state:
     st.session_state.geocode_cache = {}
 
@@ -92,7 +61,6 @@ if search_submitted and search_address:
                 st.sidebar.error("Can't find a location.")
         except Exception as e:
             st.sidebar.error(f"Geocoding error: {e}")
-
 
 st.sidebar.header("🌋 Impact location")
 impact_lat = st.sidebar.number_input("Impact latitude", value=52.2550)
@@ -126,9 +94,6 @@ asteroid_data = {
     "shockwave_radius_km": current_radius
 }
 
-# -----------------------------
-# AI evacuation route
-# -----------------------------
 ai_decision = ai_select_evacuation(
     st.session_state.user_location,
     shelters_df,
@@ -146,9 +111,6 @@ else:
     evacuation_routes = []
     st.sidebar.error("❌ No safe route found in time!")
 
-# -----------------------------
-# Map rendering
-# -----------------------------
 st.markdown("### 🗺️ Threat Map")
 map_object = render_map(
     asteroid_data,
@@ -161,9 +123,6 @@ map_object = render_map(
 )
 st_folium(map_object, use_container_width=True, height=500)
 
-# -----------------------------
-# Asteroid info
-# -----------------------------
 st.markdown("### 💥 Asteroid details")
 st.write(f"**Threat level:** {asteroid_data['threat_level']}")
 st.write(f"**Impact energy:** {asteroid_data['energy_megatons']} Mt TNT")
@@ -173,9 +132,6 @@ st.write(f"**Trajectory:** {asteroid_data['trajectory']}")
 st.write(f"**Impact probability:** {asteroid_data['impact_probability']:.5f}")
 st.write(f"**Shockwave radius:** {current_radius:.2f} km")
 
-# -----------------------------
-# Evacuation info
-# -----------------------------
 with st.expander("📋 Evacuation details"):
     if ai_decision:
         st.subheader(f"🏠 {ai_decision['name']}")
@@ -183,17 +139,11 @@ with st.expander("📋 Evacuation details"):
     else:
         st.warning("No escape route available.")
 
-# -----------------------------
-# Time warnings
-# -----------------------------
 if time_to_impact_min > 0:
     st.warning(f"☄️ Impact will occur in {time_to_impact_min} minutes.")
 else:
     st.error(f"💥 Impact occurred {time_after_impact_min} minutes ago.")
 
-# -----------------------------
-# Post-impact instructions
-# -----------------------------
 st.markdown("### 🧭 Instructions after impact")
 etap = st.selectbox("Select stage", ["⏱️ First hours", "📆 First days", "🗓️ First weeks"])
 

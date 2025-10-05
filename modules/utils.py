@@ -1,17 +1,15 @@
-import os
 import openrouteservice
 import requests
-from dotenv import load_dotenv
 
-# Ładowanie zmiennych środowiskowych
-load_dotenv()
-ORS_API_KEY = os.getenv("ORS_API_KEY")
-
-# Tworzymy klienta ORS raz
-client = openrouteservice.Client(key=ORS_API_KEY)
-
-def get_route_info(start_coords, end_coords):
+def get_client(api_key: str):
     """
+    Tworzy klienta ORS na podstawie przekazanego klucza.
+    """
+    return openrouteservice.Client(key=api_key)
+
+def get_route_info(client, start_coords, end_coords):
+    """
+    Zwraca trasy piesze, rowerowe i samochodowe między dwoma punktami.
     start_coords, end_coords: (lat, lng)
     """
     modes = {
