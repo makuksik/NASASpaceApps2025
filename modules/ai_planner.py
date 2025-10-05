@@ -1,4 +1,4 @@
-from .utils import get_route_info, get_realistic_route
+from .utils import get_route_info
 from .evacuation_planner import haversine
 
 def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, shockwave_radius_km, time_to_impact_min, ors_api_key=None):
@@ -23,13 +23,8 @@ def ai_select_evacuation(user_location, shelters_df, impact_lat, impact_lng, sho
         if distance_to_impact > shockwave_radius_km:
             try:
                 # Pobieramy możliwe trasy z ORS
-                routes = get_route_info(
-                    [user_location["lng"], user_location["lat"]],
-                    [row["lng"], row["lat"]],
-                    ors_api_key
-                )
-            except Exception as e:
-                print("❌ Błąd get_route_info:", e)
+                routes = get_route_info((user_location["lat"], user_location["lng"]), shelter_coords)
+            except:
                 continue
 
             for r in routes:

@@ -5,9 +5,7 @@ from streamlit_folium import st_folium
 from modules.zagrozenie import AsteroidDatabase
 from modules.map_renderer import render_map
 from modules.ai_planner import ai_select_evacuation
-ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjE0OTQ5NTRkMTZjMTQ2OTBhNTljMTIwMWQ0MmExYjUzIiwiaCI6Im11cm11cjY0In0="
-from modules.utils import get_client, get_route_info
-client = get_client(ORS_API_KEY)
+from modules.utils import ORS_API_KEY, client
 
 st.set_page_config(
     page_title="Impact Zone",
@@ -15,12 +13,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-DATA_PATH = r"C:\Users\pawol\NASASpaceApps2025\\"
-
-shelters_df = pd.read_csv(DATA_PATH + "shelters.csv")
-aed_df = pd.read_csv(DATA_PATH + "aed.csv")
-water_points_df = pd.read_csv(DATA_PATH + "water_points.csv")
-medical_points_df = pd.read_csv(DATA_PATH + "medical_points.csv")
+shelters_df = pd.read_csv("data/shelters.csv")
+aed_df = pd.read_csv("data/aed.csv")
+water_points_df = pd.read_csv("data/water_points.csv")
+medical_points_df = pd.read_csv("data/medical_points.csv")
 
 db = AsteroidDatabase()
 

@@ -1,13 +1,15 @@
+import os
 import openrouteservice
-import requests
+from dotenv import load_dotenv
 
-def get_client(api_key: str):
-    """
-    Tworzy klienta ORS na podstawie przekazanego klucza.
-    """
-    return openrouteservice.Client(key=api_key)
+# Ładowanie zmiennych środowiskowych
+load_dotenv()
+ORS_API_KEY = os.getenv("ORS_API_KEY")
 
-def get_route_info(client, start_coords, end_coords):
+# Tworzymy klienta ORS raz
+client = openrouteservice.Client(key=ORS_API_KEY)
+
+def get_route_info(start_coords, end_coords):
     """
     Zwraca trasy piesze, rowerowe i samochodowe między dwoma punktami.
     start_coords, end_coords: (lat, lng)
@@ -39,24 +41,3 @@ def get_route_info(client, start_coords, end_coords):
             continue
 
     return routes
-
-def get_realistic_route(start: dict, end: dict, ors_api_key: str):
-    """
-    Pobiera trasę samochodową z ORS jako listę punktów [lat, lng].
-    """
-    url = "https://api.openrouteservice.org/v2/directions/driving-car"
-    headers = {"Authorization": ors_api_key}
-    body = {
-        "coordinates": [
-            [start["lng"], start["lat"]],
-            [end["lng"], end["lat"]]
-        ]
-    }
-
-    response = requests.post(url, json=body, headers=headers)
-    if response.status_code != 200:
-        raise Exception(f"ORS error: {response.status_code} {response.text}")
-
-    data = response.json()
-    geometry = data["features"][0]["geometry"]["coordinates"]
-    return [[lat, lng] for lng, lat in geometry]
