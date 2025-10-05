@@ -4,8 +4,9 @@ import pandas as pd
 from streamlit_folium import st_folium
 from modules.zagrozenie import AsteroidDatabase
 from modules.map_renderer import render_map
-from modules.utils import ORS_API_KEY
 from modules.ai_planner import ai_select_evacuation
+
+ORS_API_KEY = "ORS_API_KEY=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImJjNjIwMjM4OGM3MTQyMWNhNDM2NzgxNjJkMjllYTA5IiwiaCI6Im11cm11cjY0In0="
 
 st.set_page_config(
     page_title="Impact Zone",
@@ -40,10 +41,17 @@ user_lat = st.sidebar.number_input("Latitude", value=52.2297)
 user_lon = st.sidebar.number_input("Longitude", value=21.0122)
 user_location = {"lat": user_lat, "lng": user_lon}
 
+
 st.sidebar.header("📍 Search location")
 with st.sidebar.form("search_form"):
     search_address = st.text_input("Enter address or city")
     search_submitted = st.form_submit_button("Search")
+
+# --- Wyszukiwanie lokalizacji użytkownika ---
+st.sidebar.header("📍 Search a location")
+with st.sidebar.form("search_form"):
+    search_address = st.text_input("Search a location")
+    search_submitted = st.form_submit_button("Find")  # Enter lub kliknięcie wyśle formularz
 
 if "user_location" not in st.session_state:
     st.session_state.user_location = user_location
@@ -59,6 +67,32 @@ if search_submitted and search_address:
         st.sidebar.success(f"Found: {feature['properties']['label']}")
     else:
         st.sidebar.error("Location not found.")
+
+# Geokodowanie po wysłaniu formularza
+from modules.utils import client, get_route_info, ORS_API_KEY  # klient ORS już załadowany z ORS_API_KEY
+
+# Geokodowanie po wysłaniu formularza
+if "geocode_cache" not in st.session_state:
+    st.session_state.geocode_cache = {}
+
+if search_submitted and search_address:
+    if search_address in st.session_state.geocode_cache:
+        st.session_state.user_location = st.session_state.geocode_cache[search_address]
+    else:
+        try:
+            geocode_result = client.pelias_search(search_address, size=1)
+            features = geocode_result.get("features", [])
+            if features:
+                feature = features[0]
+                coords = feature["geometry"]["coordinates"]
+                st.session_state.user_location = {"lat": coords[1], "lng": coords[0]}
+                st.session_state.geocode_cache[search_address] = st.session_state.user_location
+                st.sidebar.success(f"Found: {feature['properties']['label']}")
+            else:
+                st.sidebar.error("Can't find a location.")
+        except Exception as e:
+            st.sidebar.error(f"Geocoding error: {e}")
+
 
 st.sidebar.header("🌋 Impact location")
 impact_lat = st.sidebar.number_input("Impact latitude", value=52.2550)
